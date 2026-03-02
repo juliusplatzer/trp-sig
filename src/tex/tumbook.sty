@@ -1,0 +1,306 @@
+% mythesis.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tumbook}[TUM Thesis Template]
+
+% ========================
+% Fonts (mlmodern, 11pt)
+% ========================
+\RequirePackage[T1]{fontenc}
+\RequirePackage{mlmodern}
+\AtBeginDocument{\fontsize{11}{13}\selectfont}
+\renewcommand{\bfdefault}{b}
+
+% ========================
+% Graphics / SVG
+% ========================
+\RequirePackage{graphicx}
+\RequirePackage{svg}
+\RequirePackage{titling}
+\RequirePackage[a4paper,top=3.5cm,bottom=3.5cm,left=3cm,right=3cm]{geometry}
+
+% ========================
+% Maths
+% ========================
+\RequirePackage{amsmath}   % advanced math environments (align, gather, etc.)
+\RequirePackage{amssymb} % extra symbols
+\RequirePackage{mathtools} % fixes + extensions for amsmath
+\RequirePackage{mathrsfs}
+\RequirePackage{mathabx}
+\numberwithin{equation}{chapter}
+\RequirePackage{dsfont}
+\RequirePackage[scr=boondox]{mathalpha}
+\RequirePackage{tikz-cd}
+
+% Math operators
+\DeclareMathOperator{\diam}{diam}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\argmax}{arg\,max}
+\DeclareMathOperator{\spanLA}{span}
+
+% Shuffle Product Symbol
+\RequirePackage{shuffle}
+
+% Greek Math Symbols
+\RequirePackage{textgreek}
+\newcommand{\galpha}{\normalfont{\textrm{\textalpha}}}
+\newcommand{\gbeta}{\normalfont{\textrm{\textbeta}}}
+\newcommand{\ggamma}{\normalfont{\textrm{\textgamma}}}
+\newcommand{\gdelta}{\normalfont{\textrm{\textdelta}}}
+\newcommand{\gepsilon}{\normalfont{\textrm{\textepsilon}}}
+\newcommand{\gphi}{\normalfont{\textrm{\textphi}}}
+\newcommand{\gpsi}{\normalfont{\textrm{\textpsi}}}
+\newcommand{\gsigma}{\normalfont{\textrm{\textsigma}}}
+\newcommand{\gzeta}{\normalfont{\textrm{\textzeta}}}
+\newcommand{\geta}{\normalfont{\textrm{\texteta}}}
+\newcommand{\gtau}{\normalfont{\textrm{\texttau}}}
+\newcommand{\gxi}{\normalfont{\textrm{\textxi}}}
+\newcommand{\gtheta}{\normalfont{\textrm{\straighttheta}}}
+\newcommand{\glambda}{\normalfont{\textrm{\textlambda}}}
+\newcommand{\gGamma}{\normalfont{\textrm{\textGamma}}}
+\newcommand{\gPi}{\normalfont{\textrm{\textPi}}}
+\newcommand{\gpi}{\normalfont{\textrm{\textpi}}}
+\newcommand{\gOmega}{\normalfont{\textrm{\textOmega}}}
+\newcommand{\gomega}{\normalfont{\textrm{\textomega}}}
+\newcommand{\gmu}{\normalfont{\textrm{\textmugreek}}}
+\newcommand{\gLambda}{\normalfont{\textrm{\textLambda}}}
+\newcommand{\gDelta}{\normalfont{\textrm{\textDelta}}}
+\newcommand{\gnu}{\normalfont{\textrm{\textnu}}}
+\newcommand{\gZeta}{\normalfont{\textrm{\textZeta}}}
+\newcommand{\gkappa}{\normalfont{\textrm{\textkappa}}}
+\newcommand{\giota}{\normalfont{\textrm{\textiota}}}
+\newcommand{\gPhi}{\normalfont{\textrm{\textPhi}}}
+\newcommand{\gPsi}{\normalfont{\textrm{\textPsi}}}
+\newcommand{\gXi}{\normalfont{\textrm{\textXi}}}
+\newcommand{\grho}{\normalfont{\textrm{\textrho}}}
+\newcommand{\gUpsilon}{\normalfont{\textrm{\textUpsilon}}}
+\newcommand{\gSigma}{\normalfont{\textrm{\textSigma}}}
+
+\RequirePackage{enumitem}
+
+% ========================
+% User-configurable macros
+% ========================
+% Logos
+\newcommand{\institutionlogo}{tum_bw_logo.pdf}  
+\newcommand{\bottomlogo}{tum_ma_logo.pdf}
+\newcommand{\authorsignature}{signature_hw_bw.png}
+
+% Affiliation text (upper left)
+\newcommand{\institutiontext}{%
+  \textsf{Optimization and Data Analysis}\\
+  \textsf{Department of Mathematics}\\
+  \textsf{Technical University of Munich}
+}
+
+% Thesis details
+\newcommand{\thesisauthor}{}
+\newcommand{\supervisor}{}
+\newcommand{\advisor}{}
+\newcommand{\submissiondate}{}
+
+\newcommand{\subtitle}{}
+% Abstract 
+\newcommand{\abstracttext}{Sequentially ordered data naturally arise in a multitude of Data Science applications, thus undermining the need for scalable Machine Learning algorithms. This thesis aims to build a mathematically rigorous bridge between efficient kernel methods for sequentially ordered data and the signature transform, which is a non-commutative power series in the tensor algebra whose coefficients can be seen in close analogy to monomials. We begin with a self-contained review of the signature transform from a purely algebraic perspective and then connect these objects to kernel methods via the signature kernel, thereby generalizing polynomial kernels from static to sequentially ordered data. Additionally, we provide a more practically usable discretized version of the signature kernel.
+
+To overcome the quadratic cost in the number of sequences incurred by Gram matrix computations, we analyse two prominent dimensionality-reduction techniques that yield asymptotically linear training time in the number of sequences. We first combine Random Fourier Features with the discretized signature kernel, which are based on a Monte-Carlo approximation of a spectral measure that arises due to Bochner's Theorem. We provide one theoretical contribution by focusing on tensor random projections; using the Khatri-Rao product of very-sparse random projections we prove pointwise convergence with mixed tails and show fair speed-up compared to the iid Gaussian case presented in \cite{toth2025} for high-dimensional sequential data.}
+
+\newcommand{\zusammenfassungtext}{
+Sequentiell geordnete Daten treten in zahlreichen Anwendungen der Data Science auf und machen damit skalierbare Machine-Learning-Algorithmen erforderlich. Die nachfolgende Bachelorarbeit hat zum Ziel, eine mathematisch rigorose Brücke zwischen effizienten Kernel-Methoden für sequentiell geordnete Daten und der Signature Transform zu bilden. Letztere ist eine nichtkommutative Potenzreihe in der Tensoralgebra, deren Koeffizienten in enger Analogie zu Monomen stehen. Wir beginnen mit einem kurzen theoretischen Einblick in die Funktionsweise der Signature Transform aus rein algebraischer Sicht und verknüpfen diese Objekte anschließend über den Signature-Kernel mit Kernel-Methoden; damit werden polynomielle Kernel-Methoden von statischen auf sequenziell geordnete Daten verallgemeinert. Zusätzlich gehe wir auf eine in der Praxis nutzbare diskretisierte Variante ein.
+
+Um die quadratischen Laufzeit in der Anzahl der Datenpunkte, die bei Gram-Matrix Berechnungen anfallen, zu vermeiden, analysieren wir zwei prominente Dimensionsreduktionsverfahren, die asymptotisch lineare Trainingszeit in der Anzahl der Datenpunkte ermöglichen. Zunächst kombinieren wir Random Fourier Features mit dem diskretisierten Signature-Kernel; diese basieren auf einer Monte-Carlo-Approximation eines Spektralmaßes, das aus dem Satz von Bochner hervorgeht. Unser theoretischer Beitrag fokussiert sich hingegen auf tensorwertige Zufallsprojektionen: Unter Verwendung des Khatri-Rao Produkts von sehr dünnbesetzten Zufallsprojektionen beweisen wir punktweise Konvergenz mit gemischten Tails und zeigen einen deutlichen Laufzeitvorteil gegenüber den verwendeten unabhängig, normalverteilten Zufallsprojektion aus \cite{toth2025} für hochdimensionale sequentielle Daten.}
+% ========================
+% Title page
+% ========================
+\newlength{\logoh}
+\setlength{\logoh}{3\baselineskip}
+\renewcommand{\maketitle}{%
+  \begin{titlepage}
+    % --- Top row: left text and right logo ---
+    \noindent
+    \begin{minipage}[c]{0.65\textwidth}
+      \raggedright
+      \institutiontext
+    \end{minipage}%
+    \begin{minipage}[c]{0.35\textwidth}
+      \raggedleft
+      \includegraphics[height=\logoh]
+      {\institutionlogo}
+    \end{minipage}
+
+    \vspace{2cm}
+
+    % --- Title in top center ---
+    \begin{center}
+      {\Huge\bfseries \thetitle \par}
+    \end{center}
+    \begin{center}
+      {\large\bfseries \subtitle \par}
+    \end{center}
+
+    \vspace{3.0cm}
+
+    % --- Author and details, left aligned ---
+    \raggedright
+    {\huge \textbf{\thesisauthor} \par}
+    \vspace{3.0cm}
+    {\large Thesis for the attainment of the academic degree \\\textbf{Bachelor of Science (B.\,Sc.)} in Mathematics\par}
+    \vspace{3.0cm}
+    {\large
+      \textbf{Supervisor:}\\ \supervisor \par
+      \textbf{Advisor:} \\\advisor \par
+      \textbf{Submitted:}\\ \submissiondate \par
+    }
+
+    \vfill
+    % --- Bottom logo ---
+    \begin{center}
+      \includegraphics[height=2cm,keepaspectratio]{\bottomlogo}
+    \end{center}
+  \end{titlepage}
+
+  \newpage
+\thispagestyle{empty}
+
+\vspace*{\fill} % push everything down
+
+\noindent
+I hereby declare that this thesis is entirely the result of my own work except
+where otherwise indicated. I have only used the resources given in the list of references.
+
+\vspace{0.5cm} % some spacing before signature/date
+
+\noindent \submissiondate \hfill \raisebox{-0.18\height}{\includegraphics[height=2.5cm]{\authorsignature}}
+
+\clearpage
+
+  % --- Abstract page ---
+  \newpage
+  \thispagestyle{plain}
+  \section*{Abstract}
+  \abstracttext
+
+  \section*{Zusammenfassung}
+  \zusammenfassungtext
+  \clearpage
+  \newpage
+\tableofcontents
+\clearpage
+}
+
+% ========================
+% Chapter style
+% ========================
+\RequirePackage{titlesec}
+
+\titleformat{\chapter}[display]
+  {\centering\Huge\bfseries}
+  {Chapter \thechapter}
+  {1ex}
+  {\Huge}
+
+\titlespacing*{\chapter}
+  {0pt}            % no indent
+  {0.0\textheight} % push down vertically
+  {2\baselineskip} % space after
+
+% ========================
+% Headers and footers
+% ========================
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+
+\fancyhf{} % clear defaults
+\renewcommand{\headrulewidth}{0.01pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Even pages (left): section
+\fancyhead[LE]{\nouppercase{\rightmark}}
+% Odd pages (right): chapter
+\fancyhead[RO]{\nouppercase{\leftmark}}
+
+% Page numbers at bottom outer corners
+\fancyfoot[C]{\thepage}
+
+% Plain style (chapter openings)
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \fancyfoot[C]{\thepage}
+}
+
+% ========================
+% Theorem environments
+% ========================
+\RequirePackage{amsthm}
+
+\newtheoremstyle{tumplain}% name
+  {3pt}   % Space above
+  {3pt}   % Space below
+  {\itshape} % Body font
+  {1em}      % Indent amount
+  {\bfseries} % Head font
+  {}      % Punctuation after head (empty = no dot)
+  {0.8em} % Space after head
+  {}      % Head spec (default = 'Thm 1 (Note)')
+\theoremstyle{tumplain}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newtheoremstyle{tumdef}
+  {3pt}{3pt}
+  {\normalfont} % upright body
+  {1em}
+  {\bfseries}
+  {}
+  {0.8em}
+  {}
+\theoremstyle{tumdef}
+\newtheorem{definition}[theorem]{Definition}
+
+\newtheoremstyle{tumnote}
+  {3pt}{3pt}
+  {\normalfont} % upright body
+  {1em}
+  {\bfseries}
+  {.}
+  {0.8em}
+  {}
+\theoremstyle{tumnote}
+\newtheorem*{note}{Note}
+
+% ========================
+% Bibliography
+% ========================
+\RequirePackage[hyphens]{url}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage[backend=biber,style=alphabetic,maxbibnames=99]{biblatex}
+\appto{\biburlsetup}{\Urlmuskip=0mu plus 1mu\relax}
+\RequirePackage{glossaries}
+
+\titleformat{name=\chapter,numberless}[block]
+  {\huge\bfseries\raggedright}{}{0pt}{}
+\renewcommand{\bibname}{Bibliography}
+\defbibheading{bibintoc}[\bibname]{%
+  \chapter*{#1\markboth{#1}{#1}}%
+}
+% ========================
+% Table of Contents
+% ========================
+\RequirePackage{tocloft}
+\renewcommand{\cfttoctitlefont}{\Huge\bfseries\raggedright} % from tocloft package
+
+% Better URL breaking
+\RequirePackage[hidelinks]{hyperref} % or your preferred colors
+\RequirePackage{xurl}                % allows breaks almost anywhere in URLs
+\Urlmuskip=0mu plus 2mu              % let URLs stretch to find earlier breaks
+
+% Make biblatex willing to break earlier inside URLs
+\setcounter{biburlnumpenalty}{100}   % before numbers
+\setcounter{biburlucpenalty}{100}    % before uppercase letters
+\setcounter{biburllcpenalty}{100}    % before lowercase letters
+
+% A little extra flexibility to avoid overfull boxes in the bib
+\appto{\bibsetup}{\emergencystretch=1em}

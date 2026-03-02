@@ -1,0 +1,1041 @@
+\documentclass[openany]{book}
+\usepackage{tumbook}
+
+\addbibresource{references.bib}
+
+% Thesis details
+\title{Scalable Kernel Methods for Sequentially Ordered Data}
+\renewcommand{\thesisauthor}{Julius Platzer}
+\renewcommand{\supervisor}{Prof. Dr. Felix Krahmer}
+\renewcommand{\advisor}{Dr. Hanna Veselovska}
+\renewcommand{\submissiondate}{Munich, 15th October 2025}
+
+\newglossary{symbols}{sym}{sbl}{List of Abbreviations and Symbols}
+\newglossaryentry{fn}{type=symbols,name={\ensuremath{F_n}},sort=fn,
+description={Empirical (sample) distribution function}}
+\newglossaryentry{fncon}{type=symbols,name={\ensuremath{F^{n^\ast}}},sort=fnc,
+description={$n$-fold convolution of the distribution function/distribution $F$}}
+\newglossaryentry{gamma-func}{type=symbols,name={\ensuremath{\ggamma_{1/k}}},sort=fnc,
+description={Talagrand's $\ggamma_{1/k}$-functional}}
+\makenoidxglossaries
+
+
+\begin{document}
+\maketitle
+\chapter{Signature Transform} 
+Sequentially ordered data, naturally arising as time series, appears in various domains, from finance and econometrics to pattern recognition and even astronomy. A stream of sequential information can be interpreted as a function or path in a state-space. Originating in Chen’s theory of iterated integrals, the Signature Transform of such a path is a feature-rich, coordinate-free and reparametrization-invariant tensor-based representation with possibly infinitely many elements.
+
+\section{Preliminaries}
+In the following we use the notation $[n]:=\{1,2,\dots,n\}$ for any integer $n\in \mathbb N$ with the convention $[0]:=\emptyset$.
+\par The algebraic backbone of the Signature Transform are  subsets of tensor algebras with group-structure, which will be briefly introduced in the following section.
+\begin{definition}[Tensor Product]\label{tensor-prod}
+    Let $U,V$ be two vector spaces. Their \textit{tensor product} is a vector space $U\otimes V$ with a bilinear map $\gphi:U\times V\to U\otimes V$ such that
+    \begin{enumerate}[itemsep=-0.6pt, label=\alph*)]
+        \item $\mathrm{im}(\gphi)= U\otimes V$,\label{univ-prop-a}
+        \item for a bilinear map $\gpsi:U\times V\to W$ into an arbitrary vector space $W$ there exists a bilinear map $\widehat{\gpsi}:U\otimes V\to W$ such that $\gpsi =\widehat{\gpsi}\circ \gphi$.\label{univ-prop-b}
+    \end{enumerate}
+    The conditions \ref{tensor-prod}\ref{univ-prop-a} and \ref{tensor-prod}\ref{univ-prop-b} are in unity referred to as \textit{universal property} of the tensor product \cite{greub1978}. It can be shown that \ref{tensor-prod}\ref{univ-prop-a} and \ref{tensor-prod}\ref{univ-prop-b} are equivalent to the single property 
+    \begin{enumerate}[itemsep=-0.6pt, label=\alph*')]
+    \setcounter{enumi}{1}
+        \item for a bilinear map $\gpsi:U\times V\to W$ into an arbitrary vector space $W$ there exists a \textit{unique} bilinear map $\widehat{\gpsi}:U\otimes V\to W$ such that $\gpsi =\widehat{\gpsi}\circ \gphi$.
+    \end{enumerate}
+    The tensor product is well-defined and can henceforth be written as $u\otimes v=\gphi(u,v)$ for any $u\in U,v\in V$. It can also be extended inductively to more than two vector spaces.
+\end{definition}
+The universal property characterizes the tensor product in the sense that it is the up to an isomorphism unique vector space having this property, which follows immediately for two tensor products by applying the universal property of the first tensor product to the second and vice versa to check that their concatenation is the identity.
+\begin{proposition}\label{basis-tensor-prod}
+    Let $U,V$ be finite-dimensional vector spaces with $\dim(U)=n$, $\dim(V)=m$. Further, define a basis $\{u_i\}_{i\in [n]}$ of $U$ and take a basis $\{v_j\}_{j\in [m]}$ of $V$. Then $\{u_i\otimes v_j\}_{i\in[n],\,j\in[m]}$ is a basis of $V\otimes W$.
+    \begin{proof}
+        For arbitrary coefficients $\galpha_i,\gbeta_j\in \mathbb R$ with $i\in[n]$, $j\in [m]$, define $u= \sum_{i=1}^n\galpha_iu_i,$, $v=\sum_{j=1}^m\gbeta_jv_j$, then by the bilinearity of the tensor product
+        \begin{equation*}
+            u\otimes v=\left(\sum_{i=1}^n\galpha_iu_i\right)\otimes\left(\sum_{j=1}^m\gbeta_jv_j\right)=\sum_{i=1}^n\sum_{j=1}^m\galpha_i\gbeta_j(u_i\otimes v_j).
+        \end{equation*}
+        Thus, $\spanLA(\{u_i\otimes v_j\}_{i\in[n],\,j\in[m]})=U\otimes V$. To show that the set is linearly independent, assume 
+        \begin{equation}\label{lin-indep}
+            \sum_{i=1}^n\sum_{j=1}^m \galpha_{ij}u_i\otimes v_j=0_{U\otimes V}
+        \end{equation}
+        for some coefficients $\galpha_{ij}\in \mathbb R$. For some pair $(k,l)\in [n]\times [m]$, define a bilinear map
+        \begin{equation*}
+            \gpsi_{kl}:V\times V\to \mathbb R,\;\gpsi_{kl}(u_i,v_j):=\gdelta_{ik}\gdelta_{jl}.
+        \end{equation*}
+        By the universal property of the tensor product, there exists a unique linear map
+        \begin{equation*}
+            \widehat{\gpsi}_{kl}:U\otimes V\to \mathbb R,\;\widehat{\gpsi}_{kl}(u_i\otimes v_j)=\gdelta_{ik}\gdelta_{jl}.
+        \end{equation*}
+        Applying $\widehat{\gpsi}_{kl}$ to the relation (\ref{lin-indep}) yields
+        \begin{equation*}
+            0=\widehat{\gpsi}_{kl}\left(\sum_{i=1}^n\sum_{j=1}^m\galpha_{ij}u_i\otimes v_j\right)=\sum_{i=1}^n\sum_{j=1}^m\galpha_{ij}\gdelta_{ik}\gdelta_{jl}=\galpha_{kl}.
+        \end{equation*}
+        Since $(k,l)$ was chosen arbitrary, the set $\{u_i\otimes v_j\}_{i\in[n],\,j\in[m]}$ is linearly independent and thus a basis of $U\otimes V$.
+    \end{proof}
+\end{proposition}
+It follows immediately, that $\dim(U\otimes V)=\dim(U)\dim(V)$, which undermines the rapid growth of dimensionality for higher-order tensor products. Another fairly immediate property of the tensor product is that, it is not commutative in general. 
+\begin{proposition}
+    Let $V$ be a finite-dimensional vector space with $\dim(V)> 1$. Then the tensor product $V\otimes V$ is not commutative.
+    \begin{proof}
+        Choose a basis $\{v_i\}_{i\in [n]}$, then by Proposition \ref{tensor-prod} $\{v_i\otimes v_j\}_{i,j\in [n]}$ is a basis of $V\otimes V$, but then $v_1\otimes v_2\neq v_2\otimes v_1$. Otherwise they would be linearly dependent in contradiction to the fact, that they are in the basis of $V\otimes V$.
+    \end{proof}
+\end{proposition}
+\begin{definition}[Tensor Algebra]
+    Let $V$ be a real vector space. Let $V^{\otimes n}$ denote the $n$-times iterated tensor product of $V$, adhering to the convention $V^{\otimes 0}=\mathbb R$. The vector space
+    \begin{equation*}
+        T(V):=\bigoplus_{n=0}^{\infty} V^{\otimes n},
+    \end{equation*}
+    is \textit{graded} in the sense that for every $v\in T(V)$ there exists a threshold $m\in \mathbb N_0$ such that
+    \begin{equation*}
+        v=\sum_{n=0}^m\gpi_n(v)
+    \end{equation*}
+    with the canonical projection $\gpi_n :T(V)\to V^{\otimes n}$. $T(V)$ becomes the unital, associative \textit{tensor algebra} through elementwise addition and the tensor product extended by bilinearity, in the sense that for every $u,v\in T(V)$ 
+    \begin{equation*}
+        u\cdot v=\sum_{i,\,j}u_i\otimes v_j=\sum_{k\geq 0}\sum_{k=i+j}u_i\otimes v_j
+    \end{equation*}
+    and the natural action of $\mathbb R$ given by $\glambda v=(\glambda v_0,\glambda v_1,\dots)\in T(V)$. Thus, $T(V)$ can be identified with the space of graded sequences with infinitely many zeros, in the sense that for each sequence element $v_n\in V^{\otimes n}$ \cite{greub1978}. The \textit{extended tensor algebra} is the direct product
+    \begin{equation*}
+        T((V)):=\prod_{n=0}^\infty V^{\otimes n}
+    \end{equation*}
+    with elementwise addition and the tensor product by bilinearity in the sense that for every $u,v\in T((V))$
+    \begin{equation*}
+        u\cdot v=\prod_{k\geq 0}\sum_{k=i+j}u_i\otimes v_j.
+    \end{equation*}
+    $T((V))$ can be associated with the space of all graded sequences with possibly infinitely many non-zeros \cite{lyons2022}. $T((V))$ can be endowed with the natural action of $\mathbb R$ in the same way as $T(V)$. For $n\in \mathbb N$, define the ideal $I_n:=\{v\in T((V)):v_0=\cdots =v_n=0\}$. The \textit{truncated tensor algebra} of order $n$ of $V$ is then the quotient algebra
+    \begin{equation*}
+        T^{n}(V):=T((V))/I_n\cong \bigoplus_{k=0}^nV^{\otimes k}.
+    \end{equation*}
+    The canonical homomorphism $T((V))\to T^{n}(V)$ is denoted as $\gpi_n^{T((V))}$ and similarly, the projection onto the $i$-th graded element for $i\in [n]\cup \{0\}$ of $T^n(V)$ is denoted as $\gpi_i^{T^n(V)}:T^n(V)\to V^{\otimes i}$.
+    It is obvious, that $\giota=(1,0,0,\dots)$ is the unit element wrt to the tensor product in both $T(V)$ and $T((V))$.
+\end{definition}
+The inner product is a canonical way to measure similarity of two vectors. In the next subsection, we will formally introduce such a concept for sequences using the signature transform, which requires the notion of an inner product on $T((V))$, given an inner product on $V$.
+\begin{definition}\label{tensor-prod-inner-prod}
+    Let $H$ be a Hilbert space. For $n\in \mathbb N $, define an \textit{inner product on $H^{\otimes n}$} through
+    \begin{equation*}
+    \begin{split}
+        \langle u_{i_1}\otimes \cdots \otimes u_{i_n},v_{j_1}\otimes \cdots \otimes v_{j_n}\rangle_{H^{\otimes n}}=\prod_{k=1}^n \langle u_{i_k},v_{j_k}\rangle_H.
+    \end{split}
+    \end{equation*} 
+    We define an \textit{inner product on the tensor algebra} $T((H))$ by setting
+    \begin{equation*}
+        \langle T_1,T_2\rangle_{T((H))}=\sum_{n=0}^\infty\langle (\gpi_n^{T(H)}\circ \gpi_n^{T((H))})(T_1), (\gpi_n^{T(H)}\circ \gpi_n^{T((H))})(T_2)\rangle_{H^{\otimes n}}
+    \end{equation*}
+    and similarly on the truncated tensor algebra of order $n$
+    \begin{equation*}
+        \langle T_1,T_2\rangle_{T^n(H)}=\sum_{n=0}^\infty\langle \gpi_n^{T((H))}(T_1), \gpi_n^{T((H))}(T_2)\rangle_{H^{\otimes n}}.
+    \end{equation*}
+\end{definition}
+For the Signature Transform of a path to exist as sequence of iterated integrals in the extended tensor algebra, some regularity assumptions need to be made.
+\begin{definition}[$p$-variation]\label{p-var-def}
+    Let $V$ be a Banach space with norm $\|\cdot \|_V$ and $X:[0,s]\to V$ be a continuous path, then for $p\geq 1$, and a partition $\mathcal D:=\{0\leq t_0< t_1<\dots<t_n\leq s \}$ of $[0,s]$, the $p$-variation of $x$ is 
+    \begin{equation*}
+        \|X\|_{p,\,[0,s]}=\left(\sup_{\mathcal D}\sum_{i=0}^{n -1} \|x_{i+1}-x_{i}\|_V^p\right)^{1/p},
+    \end{equation*}
+    where the supremum is taken over the set of all finite partitions of $[0,s]$. We denote the collection of continuous paths $X:[0,s]\to V$ with finite $p$-variation by $\mathscr V^{p}([0,s], V)$.
+\end{definition}
+\begin{definition}[Young Integral]
+    Let $V$, $W$ be Banach spaces and $\mathscr L(V,W)$ denote the space of linear operators between $V$ and $W$. For two \textit{paths} $X:[0,s]\to V$ and $Y:[0,s]\to \mathscr L(V,W)$ and a partition $\mathcal D:=\{0\leq t_0< t_1<\dots<t_n\leq s\}$ of $[0,s]$, we set $\vert \mathcal D\vert :=\min\{t_{i+1}-t_i:i\in [n-1]\cup \{0\}\}$ and
+    \begin{equation*}
+        \int _{\mathcal D}Y\,\mathrm dX=\sum_{i=0}^nY_{t_i}(X_{t_{i}}-X_{t_{i-1}}),
+    \end{equation*}
+    then for arbitrary $t\in [0,t]$ the Young integral of $Y$ along $X$ over the interval $[a;t]$ is given by
+    \begin{equation*}
+        \int_{0}^tY(s)\,\mathrm dX(s):=\lim_{j\to \infty}\int _{\mathcal D_j}Y\,\mathrm dX.
+    \end{equation*}
+    where $(\mathcal D_j)_{j\in \mathbb N}$ is a sequence of partitions of $[0,s]$ such that $\vert \mathcal D_j\vert \to 0$ as $j\to \infty$ \cite{lyons2022}.
+\end{definition}
+In the setting of the preceding definition, it can be shown that for $p,q\in [1;\infty)$ with  $1/p+1/q> 1$, the Young integral determines
+a way for a path $Y\in \mathscr V^q([0,s], \mathscr L(V,W))$ to be integrated along a path $X\in \mathscr V^p([0,s], V)$ and yield a well-defined path 
+\begin{equation*}
+    I:t\mapsto \int_0^tY(s)\,\mathrm dX(s)
+\end{equation*}
+with finite $p$-variation, $I\in \mathscr V^p([a;b], W)$ \cite{lyons2007}.
+\begin{definition}[Signature Transform]
+    Let $V$ be a Banach space. The signature transform of a continuous path $X:[0,s]\to V$ is a solution to the \textit{universal differential equation} \cite{lyons2022}
+    \begin{equation}\label{univ-diff-eq}
+        \mathrm d S_{0,t}(X)=S_{0,t}(X)\otimes \mathrm dX(t),\;S_{0,0}(X)=\giota\in T((V)).
+    \end{equation}
+\end{definition}
+This already shows that the signature transform is translation-invariant, in a spatial sense, since adding a constant to the path does not alter the solution to the universal differential equation. That this does not hold for time-translations follows from Chen's identity, which will be introduced in the next section. A more tractable format for the signature transform can be written in Young's integration framework.
+\begin{theorem}
+    Let $V$ be a Banach space and $X\in \mathscr V^p([0,s], V)$ for $p\in [1;2)$, then the signature transform of $X$ is given as the path
+    \begin{equation*}
+        t\mapsto \prod_{n=0}^\infty S^{n}_{0,t}(X)=:\mathbb S_{[0,t]}(X)\in T((V))
+    \end{equation*}
+    with $\mathbb S_{[0,t]}(X)\in T((V))$ for all $t\in [0,s]$ and
+    \begin{equation*}
+        S_{a,t}^0(X):=1,\;S_{a,t}^n(X):=\int_a^t S^{n-1}_{a,s}(X)\otimes \mathrm dX(s)\in T^{n}(V)
+    \end{equation*}
+    where the iterated integral is to be taken in the Young sense. Additionally, $\mathbb S_{[0,t]}(X)$ is the unique solution to the universal differential equation (\ref{univ-diff-eq}). Further, the truncated signature is defined as $\mathbb S_{[0,t]}^n(X):=\gpi_n^{T((V))}\circ \mathbb S_{[0,t]}(X)$.
+    \begin{proof}
+        We omit the proof of this theorem due to its increased technicality with handling concepts from rough path theory and refer interested readers to Lemma 2.10 of \cite{lyons2007}.
+    \end{proof}
+\end{theorem}
+It is now clear that every path $X\in \mathscr V^p([0,s], V)$ can be assigned its unique signature transform, however the reverse is not necessarily true, at least for $p\in (1;2)$ this remains an open question \cite{lyons2007}. 
+\par However, for the case $p=1$ this can be proven, using the concept of \textit{tree-like} equivalence. Loosely speaking, a path is tree-like if one can reduce it to a point by repeatedly erasing back-and-forth pieces. Intuitively, this is exactly like walking on a tree and what happens when every time one comes back along the same branch, that branch cancels. What remains after removing all such backtracks is simply the root of the tree. Tree-like equivalence is in fact a very weak concept, adding an increasing coordinate to a path, e.g. a time-coordinate, already ensures that the original and the transformed path are not tree-like equivalent \cite{kiraly2019}.
+\par Let $X,Y\in \mathscr V^1([0,s],V)$ be two paths, then $X\ast Y\in \mathscr V^1([0,2s], V)$ is said to be \textit{tree-like} if there exists a continuous \textit{height} function $h:[0,2s]\to [0,\infty)$, such that $h(0)=h(2s)=0$ and for all $t_1,t_2\in [2s]$ with $t_1\leq t_2$
+\begin{equation*}
+    \|(X\ast Y)(t_2)-(X\ast Y)(t_1)\|\leq h(t_1)+h(t_2)+\inf_{u\in [0,2s]} h(u).
+\end{equation*}
+define an equivalence relation $X\sim Y:\Longleftrightarrow X\ast Y\;\textrm{ tree-like}$. Theorem 2.29 in \cite{lyons2007} shows that $\mathbb S_{0,s}(X)=\mathbb S_{0,s}(Y)$ iff $X\sim Y$.
+In the next section, we will make use of the simplex. 
+\section{Algebraic Properties}
+Since the signature transform of a path is unique, defining a signature mapping from the set of paths, modulo translations and reparametrisations, into the tensor algebra is well-defined. In the following,  select important algebraical properties of that mapping are defined. 
+\par \textit{The following statements are only proven for paths with bounded $1$-variation despite being stated for $p\in[1;2)$. Proofs for the more general case can be found in \cite{lyons2022}.}
+\begin{definition}[Path Concatenation]
+    Let $X:[0,s]\to V$, $Y:[s,u]\to V$ be two continuous paths. Their concatenation is the path $X\ast Y:[0,u]\to V$ defined by
+    \begin{equation*}
+        (X\ast Y)(t):=\begin{cases}
+            X(t)\;&\textrm{ for }t\in [0,s]
+            \\ X(s)+Y(t)-Y(s)\;&\textrm{ for }t\in (s,u].
+        \end{cases}
+    \end{equation*}
+\end{definition}
+We will need the notion of a simplex in the following sections.
+\begin{definition}[Simplex]
+    Let $n\in \mathbb N$ and $I\subseteq \mathbb R$ be a compact interval, then
+    \begin{equation*}
+        \triangle_n(I):=\{t_1<\cdots<t_n: t_1,\dots,t_n\in I\}.
+    \end{equation*}
+\end{definition}
+The following theorem due to Chen proves that the signature is a homomorphism.
+\begin{theorem}[Chen's Identity]
+     Let $X:[0,s]\to V$, $Y:[s,u]\to V$ be two continuous paths with finite $p$-variation for $p\in [1;2)$. Then
+     \begin{equation*}
+         \mathbb S_{[0,u]}(X\ast Y)=\mathbb S_{[0,s]}(X)\otimes \mathbb S_{[s,u]}(Y).
+     \end{equation*}
+     \begin{proof}
+        Denote the concatenated path as $Z:=X\ast Y$ and fix some truncation level $n\in \mathbb N$. There exists a unique index $k\in \mathbb N$ such that 
+        \begin{equation*}
+            A_k:=\{0\leq t_0<t_1<\dots<t_k<s<t_{k+1}<\dots\leq t_{n}<u\},
+        \end{equation*}
+        then the simplex $\triangle_n(0,u)$ is partitioned by the sets $A_k$ up to a Lebesgue-measure zero set where some $t_i=s$. Since $A_k$ factorizes as a product of simplices, $A_k\cong \triangle_{k}(0,s)\times \triangle_{n-k}(s,u)$, it follows by Fubini's theorem that,
+        \begin{equation*}
+            \begin{split}
+                &\int_{A_k}\mathrm dZ(t_1)\otimes \cdots \otimes \mathrm dZ_{t_n}\\
+                =&\left(\underset{0<t_1<\cdots<t_k<s}{\int\cdots \int}\mathrm dX(t_1)\otimes \cdots \otimes \mathrm dX(t_k)\right)\otimes \left(\underset{0<t_{k+1}<\cdots<t_n<u}{\int\cdots \int}\mathrm dY(t_{k+1})\otimes \cdots \otimes \mathrm dY({t_{n}})\right),
+            \end{split}
+        \end{equation*}
+        which simply equals $\mathbb S^k_{[0,s]}(X)\otimes \mathbb S^{n-k}_{[s,u]}(Y)$. Summing over $k\in [n]\cup\{0\}$ yields
+        \begin{equation*}
+            \mathbb S^n_{[0,u]}(Z)=\sum_{k=0}^n \mathbb S^k_{[0,s]}(X)\otimes \mathbb S^{n-k}_{[s,u]}(Y).\qedhere
+        \end{equation*}
+    \end{proof}
+\end{theorem}
+Additionally, the following inversion property makes the image of the signature a group under path concatenation.
+\begin{theorem}[Inversion Property]
+    Let $X:[0,s]\to V$ be a continuous path with finite $p$-variation for $p\in [1;2)$. Define the time-inverted path $\overleftarrow{X}:[s,0]\to V,\, t\mapsto X(s-t)$, then
+    \begin{equation*}
+        \mathbb S_{[0,s]}(\overleftarrow X)=\mathbb S_{[0,s]}(X)^{-1}.
+    \end{equation*}
+    \begin{proof}
+        Let $t\in [0,s]$. Set $U(t):=1-\mathbb S_{[0,t]}(X)$. Using the Neumann series, we get that
+        \begin{equation*}
+            (1+U(t))^{-1}=\sum_{n=0}^\infty(-U(t))^n=:\gzeta(t),
+        \end{equation*}
+        which is well-defined due to the exponential decay of the signature coefficients (Equation 2.52, \cite{lyons2022}). Differentiating yields
+        \begin{equation*}
+        \mathrm{d}\gzeta(t)=\sum_{n=1}^\infty (-1)^n\sum_{k=1}^{n-1}U(t)^k\mathrm dU(t)U(t)^{n-1-k}.
+        \end{equation*}
+        By the universal differential equation $\mathrm dU(t)=(1+U(t))\otimes\mathrm dX(t)$, and thus
+        \begin{equation*}
+        \begin{split}
+            \mathrm{d}\gzeta(t)&=\sum_{n=1}^\infty (-1)^n\sum_{k=1}^{n-1}U(t)^k((1+U(t))\otimes\mathrm dX(t))U(t)^{n-1-k} \\
+            &=\left(\sum_{n=1}^\infty(-1)^n\sum_{k=0}^{n-1}U(t)^kU(t)^{n-1-k}+\sum_{n=1}^\infty(-1)^n\sum_{k=0}^{n-1}U(t)^{k+1}U(t)^{n-1-k}\right)\otimes \mathrm dX(t).
+        \end{split}
+        \end{equation*}
+        Rearranging and combining gives
+        \begin{equation*}
+            \mathrm{d}\gzeta(t)=\left(\sum_{n=0}^\infty(-1)^{n+1}(n+1)U(t)^n\right)(1+U(t))\otimes \mathrm dX(t),
+        \end{equation*}
+        but 
+        \begin{equation*}
+        \begin{split}
+            &\left(\sum_{n=0}^\infty(-1)^{n+1}(n+1)U(t)^n\right)(1+U(t))=
+            \\ &\sum_{n=0}^\infty(-1)^{n+1}(n+1)U(t)^n+\sum_{n=0}^\infty(-1)^{n+1}(n+1)U(t)^{n+1}=
+            \\&-1+\sum_{n=1}^\infty U(t)^n((-1)^{n+1}(n+1)-(-1)^nn)=
+            \\&-1-\sum_{n=1}^\infty(-1)^nU(t)^{n}=-\gzeta(t),
+        \end{split}
+        \end{equation*}
+        which yields $\mathrm d\gzeta(t)=\gzeta(t)\otimes \mathrm dX(s-t)$ through a change of variables. Since the time-reversed path fulfills $\mathrm d\mathbb S_{[0,s]}(\overleftarrow X)=\mathbb S_{[0,s]}(\overleftarrow X)\otimes \mathrm dX(s-t)$ and the solution to the universal differential equation is unique, we conclude $\mathbb S_{[0,t]}(X)^{-1}=\gzeta(t)=\mathbb S_{[0,t]}(\overleftarrow X)$ for all $t\in [0,s].$
+    \end{proof}
+\end{theorem}
+Another interesting algebraic property arises from the set of \textit{linear forms} on $T((V))$, i.e. linear functions from $T((V))$ to $\mathbb R$.
+\par Let $\{v_1,\dots,v_d\}$ be a basis of $V$ and $\{v_1^\ast,\dots,v_d^\ast\}$ be the dual basis of $V$, i.e. $ v_i^\ast(v_j)=\gdelta_{ij}$ for all $i,j\in [d]$. Given arbitrary $(\galpha_1, \dots,\galpha_n)\in (V^{\ast})^n$, consider the linear map
+\begin{equation*}
+    \gphi_{\galpha}:V^n \to \mathbb R, \gphi_{\galpha}(u_1,\dots,u_n)=\prod_{i=1}^n\galpha_i(u_i)
+\end{equation*}
+By the universal property of $V^{\otimes n}$ there exists a unique linear functional $f_{\galpha}:V^{\otimes n}\to \mathbb R$ such that
+\begin{equation*}
+    f_{\galpha}(u_1\otimes \cdots \otimes u_n)= \gphi_{\galpha}(u_1,\dots,u_n)=\prod_{i=1}^n\galpha_i(u_i)
+\end{equation*}
+for any $u_1,\dots, u_n\in V$. Note, that the assignment map $(\galpha_1,\dots,\galpha_n)\mapsto f_{\galpha}\in (V^{\otimes n})^\ast$ is itself linear and similarly, by the universal property of $(V^{\ast})^{\otimes n}$ there exists a unique linear map $\gpsi_{n}:(V^{\ast})^{\otimes n}\to (V^{\otimes n})^\ast$ such that 
+\begin{equation*}
+    \gpsi_{n}(\galpha_1\otimes \cdots \otimes \galpha_n)(u_1\otimes \cdots \otimes u_n)=f_{\galpha}(u_1\otimes \cdots \otimes u_n)=\prod_{i=1}^n\galpha_i(u_i).
+\end{equation*}
+The map $\gpsi_n$ is an isomorphism since 
+\begin{equation*}
+    \gpsi_n(e_{i_1}^\ast\otimes \cdots \otimes e_{i_n}^\ast)(e_{j_1}\otimes \cdots \otimes e_{j_n})=\prod_{k=1}^n\gdelta_{i_kj_k}
+\end{equation*}
+and thus $\gpsi_n$ maps the basis of $(V^\ast)^{\otimes n}$ to the dual basis of $(V^{\otimes n})^\ast$. It follows that, $(V^\ast)^{\otimes n}$ can be canonically identified with $(V^{\otimes n})^\ast$. 
+\par This pairing can be extended to a linear map $(V^{\otimes n})^\ast \to T((V))^\ast$ through 
+\begin{equation*}
+    \widehat{\gpsi}_{n}:(V^{\ast})^{\otimes n} \to T((V))^\ast, \;\widehat{\gpsi}_n(\gxi)=\gpsi_n(\gxi)\circ \gpi_n^{T^n(V)}\circ \gpi_n^{T((V))}
+\end{equation*}
+for each $\gxi\in (V^{\ast})^{\otimes n}$. Since this is possible for each $n\in \mathbb N$, we equally get a graded linear mapping 
+\begin{equation*}
+    \widehat{\gpsi}:T(V^\ast)\to T((V))^\ast.
+\end{equation*}
+Thus, for any $n\in \mathbb N$ and multi-index $I=(i_1,\dots,i_n)\in [d]^n$, the mapping
+\begin{equation*}
+    \widehat{\gpsi}(e^\ast_I)\circ \mathbb S_{[0,s]}(X):\mathscr V^p([0,s], V)\to \mathbb R, X\mapsto \underset{0<t_1<\cdots <t_n<s}{\int \cdots \int} e_{i_1}^\ast(\mathrm dX(t_1))\cdots e_{i_n}^\ast(\mathrm dX(t_n))
+\end{equation*}
+is well-defined. For any two elements of $T(V^\ast)$ their pointwise product as real functional is a quadratic form on $T((V))$, which in fact endows $T(V^\ast)$ with an specific algebraic structure.
+\begin{definition}[Shuffle Product]
+    Let $n,m\in \mathbb N_{>0}$. The set of $(n,m)$\textit{-shuffles} is denoted as 
+    \begin{equation*}
+        \mathrm{Sh}(n,m):=\{\gsigma \in \mathscr S_{n+m}:\gsigma (1)< \cdots <\gsigma(n),\,\gsigma(n+1)<\cdots <\gsigma(n+m)\}
+    \end{equation*}
+    where $\mathscr S_{n+m}$ is the symmetric group over the set of $n+m$ symbols. Let $e^\ast_I, e^\ast_J\in T(V^\ast)$ with multi-indices $I:=(i_1,\dots, i_n)\in [d]^n$, $J:=(j_1,\dots,j_m)\in [d]^m$, then their \textit{shuffle product} is defined by
+    \begin{equation*}
+        e^\ast_I\shuffle e^\ast_J:=\sum_{\gsigma \in \mathrm{Sh}(n,m)}e^{\ast}_{\left(i_{\gsigma^{-1}(1)},\dots,\,i_{\gsigma^{-1}(n)},\,j_{\gsigma^{-1}(n+1)},\dots,\,j_{\gsigma^{-1}(n+m)}\right)}.
+    \end{equation*}
+\end{definition}
+Intuitively, a shuffle is simply an interleaving of two ordered vectors, that preserves the internal order of each vector.
+\begin{theorem}[Shuffle Property]\label{shuffle-property}
+    Let $e^\ast_I, e^\ast_J\in T(V^\ast)$ with multi-indices $I:=(i_1,\dots, i_n)\in [d]^n$, $J:=(j_1,\dots,j_m)\in [d]^m$. Then it holds that for all paths $X:[0,s]\to V$ with bounded $p$-variation for some $p\in [1;2)$,
+    \begin{equation*}
+        \widehat{\gpsi}(e^\ast_I\shuffle e^\ast_J)\circ \mathbb S_{[0,s]}(X)= (\widehat{\gpsi}(e^\ast_I)\circ \mathbb S_{[0,s]}(X))(\widehat{\gpsi}(e^\ast_J)\circ \mathbb S_{[0,s]}(X)).
+    \end{equation*}
+    \begin{proof}
+    Since $X$ is a path of bounded $1$-variation, the application of Fubini's theorem is valid and thus the product can be written as
+    \begin{equation*}
+        \begin{split}
+            &\int_{\triangle_n} e_{i_1}^\ast(\mathrm dX(t_1))\cdots e_{i_n}^\ast(\mathrm dX(t_n)){\int}_{\triangle_{m}} e_{j_1}^\ast(\mathrm dX(s_1))\cdots e_{j_m}^\ast(\mathrm dX(s_m))\\=&\int_{\triangle_n\times \triangle_{m}} e_{i_1}^\ast(\mathrm dX(t_1))\cdots e_{i_n}^\ast(\mathrm dX(t_n))\, e_{j_1}^\ast(\mathrm dX(s_1))\cdots e_{j_m}^\ast(\mathrm dX(s_m))
+        \end{split}
+    \end{equation*}
+    in the Lebesgue sense. Given $(t,s)\in \triangle_n\times \triangle_{m}$ such that $t_i\neq s_j$ for all $i\in [n],j\in [m]$ there exists a unique $\gsigma_{t,s} \in \mathrm{Sh}(n,m)$ such that $\gsigma_{t,s}^{-1}(i)<\gsigma_{t,s}^{-1}(n+j)$ is equivalent to $t_i<s_j$. For some $\gsigma\in \mathrm{Sh}(n,m)$, denote the set $A_{\gsigma}:=\{(t,s)\in \triangle_n\times \triangle_{m}: \gsigma=\gsigma_{t,s}\}$. Thus,
+    \begin{equation*}
+        \triangle_n\times \triangle_{m}=\bigsqcup_{\gsigma\in \mathrm{Sh}(n,m)} A_{\gsigma} \cup \bigcup_{\substack{i\in [n],\,j\in [m]}}\{t_i=s_j\}.
+    \end{equation*}
+    Since the second union is a union of hyperplanes of codimension $1$, it has measure zero in $\mathbb R^{n+m}$. Define the transformation 
+    \begin{equation*}
+        \gPhi_{\gsigma}:A_{\gsigma}\to \triangle_{n+m}, \gPhi(t,s)=w\;\textrm{with } w:=\begin{cases}
+            w_{\gsigma(i)} \;&\textrm{ for } i\in [n]\\
+            w_{\gsigma(n+j)}\;&\textrm{ for } j\in [m],
+        \end{cases}
+    \end{equation*}
+    then $\vert \det(\mathrm D\gPhi_{\gsigma}^{-1})\vert =1$ since the inverse of the Jacobian is simply a permutation matrix.
+    We conclude
+    \begin{equation*}
+        \begin{split}
+            &\int_{\triangle_n\times \triangle_{m}} e_{i_1}^\ast(\mathrm dX(t_1))\cdots e_{i_n}^\ast(\mathrm dX(t_n))\, e_{j_1}^\ast(\mathrm dX(s_1))\cdots e_{j_m}^\ast(\mathrm dX(s_m))\\=&\sum_{\gsigma\in \mathrm{Sh}(n,m)}\int_{\triangle_{n+m}}e^\ast_{k_{\gsigma^{-1}(1)}}(\mathrm dX(w_1))\cdots e^\ast_{k_{\gsigma^{-1}(n+m)}}(\mathrm dX(w_{n+m})).\qedhere
+        \end{split}
+    \end{equation*}
+    \end{proof}
+\end{theorem}
+We note, that the result extends to all $v^\ast, w^\ast\in T(V^\ast)$ due to linearity. In fact, Theorem \ref{shuffle-property} states the fact, that the linear forms on $T((V))$ induced by $T(V^\ast)$ restricted to the image of the signature form an algebra of real-valued functions \cite{lyons2007}.
+\\ The shuffle property shows that the signature can be seen as the path-space generalization of the monomial feature map. In $\mathbb R^d$, the application of linear functionals equals iterated integrals of the coordinate increments, which plays the role of non-commutative monomials with degree being the level of the dual basis elements. The shuffle property, is then the analogue of multiplying monomials and collecting terms. 
+\section{Kernel Methods}
+A canonical approach to learning a functional relationship $f:X\to Y$ given a finite dataset $\gOmega\subseteq X\times Y$ is to define basic features and fit a linear combination of these. In polynomial regression, these features are monomials evaluated at each $(x,y)\in \gOmega$ up to a certain fixed degree, chosen as hyperparameter. 
+\par Transferring this idea to sequentially ordered data, is in fact possible, however we will first introduce some notation. Let $V$ be a Banach space. Denote
+\begin{equation*}
+    \mathscr X_V:= \bigcup_{n=1}^\infty\{(x_1,\dots,x_n)\in V^n\}
+\end{equation*}
+the collection of all sequences of finite but arbitrary length over $V$. In this supervised learning setting, consider a labelled dataset $\gOmega:=\{(x_i,y_i)\}\subseteq \mathscr X_V\times \mathbb R$ of size $n\in \mathbb N_{>0}$ and denote $\gpi_{\mathscr X_V}$ the projection onto $\mathscr X_V$. The task is to determine an estimator of a function $f:\mathscr X_V\to \mathbb R$ given $\gOmega$, that is capable of predicting the response to new inputs. 
+Theoretical guarantees on the error of such approximations can be made when features are extracted using a \textit{universal feature map} $\gPsi$ \cite{lyons2022}. It provides a lifted representation of the input features $\gpi_{\mathscr X_V}(\gOmega)$ as a subset of a Banach space $W$, in which continuous functions can be approximated by linear functions arbitrarily well. Equivalently, in mathematical terms, for any $g\in \mathscr C^0(\gPsi(\gpi_{\mathscr X_V}(\gOmega)))$ and $\gepsilon>0$ there exists a real linear functional $\gxi\in \gPsi(\gpi_{\mathscr X_V}(\gOmega))^\ast$ such that
+\begin{equation*}
+    \sup_{w\in \gPsi(\gpi_{\mathscr X_V}(\gOmega))}\vert f(w)-\gxi(w)\vert \leq \gepsilon.
+\end{equation*}
+Given some convex loss function $\ell:\mathbb R\times \mathbb R\to [0,\infty)$, pulling back along $\gPsi$ results in the following convex optimization problem for empirical risk minimization
+\begin{equation}\label{rkhs-min-problem}
+    \min_{\gxi\in \gPsi(\gpi_{\mathscr X_V}(\gOmega))^\ast} \sum_{i=1}^n\ell(\gxi(\gPsi(x_i)),y_i)+\glambda \|\gxi\|^2_{W^\ast}
+\end{equation}
+for some regularization parameter $\glambda >0$ and the operator norm $\|\gxi\|_{W^\ast}=\sup \{\gxi(w):w\in W, \|w\|_W\leq 1\}$.
+\par Choosing $W$ in this situation such that it is a Hilbert space, has two important advantages. If $W$ is a Hilbert space, then by the Fréchet-Riesz representation theorem \cite{clason2020}, $W^\ast$ is isometrically isomorphic to $W$ and for any fixed $x\in\gpi_{\mathscr X_V}(\gOmega)$ the function
+\begin{equation*}
+    \mathscr k:\gpi_{\mathscr X_V}(\gOmega)\to \mathbb R,\; \mathscr k(x,x_i):=\langle \gPsi(x), \gPsi(x_i)\rangle_W
+\end{equation*}
+is positive definite and symmetric, i.e. a kernel. Kernel functions can be informally regarded as similarity measures, which appear as such in various statistical learning algorithms, such as support vector regression or principal component analysis. It generates the Reproducing Kernel Hilbert Space, 
+\begin{equation*}
+    \mathscr H_{\mathscr k}=\overline{\spanLA\{\mathscr k(x,\cdot):x\in \gpi_{\mathscr X_V}(\gOmega)\}},
+\end{equation*}
+containing the images of the input
+patterns under $\gPsi$, or in more rigorous terms, the Reproducing Kernel Hilbert Space can be defined as a Hilbert space of functions $g$ on $\gpi_{\mathscr X_V}(\gOmega)$ such that all evaluation functionals $g\mapsto g(x),\,x\in \gpi_{\mathscr X_V}(\gOmega)$ are
+continuous \cite{schoelkopf2001book}. In $\mathscr H_{\mathscr k}$ each element $f\in \mathscr H_{\mathscr k}$ is represented by a unique element $\mathscr k(x,\cdot)$ such that 
+\begin{equation*}
+    f(x)=\langle f, \mathscr k(x, \cdot)\rangle_{\mathscr H_{\mathscr k}}.
+\end{equation*}
+One advantage is, that the representer theorem \cite{schoelkopf2001} ensures that a minimizer for (\ref{rkhs-min-problem}) can be written as a linear combination in the kernel sections $\mathscr k(x,\cdot)$, which reduces the optimization problem to a finite-dimensional one. The second, more important advantage, often referred to as kernel trick, is that evaluating such a minimizer and in general any function in the Reproducing Kernel Hilbert Space, requires only computing the Gram matrix $K_{ij}:=(\mathscr k(x_i,x_j))_{i,j\in [n]}$, i.e. the values of the kernel for each input pair $(x_i,x_j)\in \mathscr X_V\times \mathscr X_V$, since
+\begin{equation}\label{kernel-eval}
+    f(x)=\sum_{i=1}^n\galpha_i\mathscr k(x,x_i).
+\end{equation}
+In conclusion, kernel methods enable learning non-linear relationships through linear models in a lifted feature space.
+\par With regard to the signature, we mentioned that it can be seen in close analogy to monomials on the domain of sequentially ordered data, and is, in accordance with the polynomial intuition, indeed a valid universal feature map according to Theorem 5.4 in \cite{chuchiero2023}. This gives rise to the following
+\begin{definition}[Signature Kernel]
+    Let $H$ be a Hilbert space, $I\subseteq \mathbb R$ be a compact interval, then
+    \begin{equation}\label{sig-kernel}
+        \mathscr k_{\mathtt{Sig}}:\mathscr V^p(I,H)\times \mathscr V^p(I,H)\to [0;\infty),(X,Y)\mapsto\langle \mathbb S_{I}(X),\mathbb S_{I}(Y)\rangle_{T((H))}
+    \end{equation}
+    defines a positive-semidefinite kernel, where the inner product was introduced in Definition \ref{tensor-prod-inner-prod}. Similarly, the truncated signature kernel of order $n$ is defined as
+    \begin{equation}\label{sig-kernel-trunc}
+        \mathscr k_{\mathtt{Sig}}^n(X,Y):=\langle (\gpi_n^{T((H))}\circ \mathbb S_{I})(X),(\gpi_n^{T((H))}\circ \mathbb S_{I})(Y)\rangle_{T^n(H)}.
+    \end{equation}
+\end{definition}
+\begin{theorem}
+    Let $p\in [1;2)$. Then the functions defined in (\ref{sig-kernel}) and (\ref{sig-kernel-trunc}) are positive-semidefinite kernels.
+    \begin{proof}
+        By Theorem 3.7 in \cite{lyons2007} and the Cauchy-Schwarz inequality, it holds that,
+        \begin{equation*}
+        \begin{split}
+            \vert \mathscr k_{\mathtt{Sig}}(X,Y)\vert &= \sum_{n=0}^\infty \vert  \langle (\gpi_n^{T((H))}\circ \mathbb S_{I})(X),(\gpi_n^{T((H))}\circ \mathbb S_{I})(Y)\rangle_{T^n(H)}\vert  \\ 
+            &\leq \sum_{n=0}^\infty\|\mathbb S^n_I(X)\|_{T^n(H)}\|\mathbb S^n_I(Y)\|_{T^n(H)} \\
+            &\leq \sum_{n=0}^\infty\frac{(\|X\|_{p,I}\|Y\|_{p,I})^{n/p}}{\gGamma(C_{p}+1)^2}\leq E_{0,\gGamma(C_{p}+1)}(\|X\|_{p,I})E_{0,\gGamma(C_{p}+1)}(\|Y\|_{p,I})<\infty
+        \end{split}
+        \end{equation*}
+        with some constant $C_{p}$ that only depends on $p$, defined in Theorem 3.7 of \cite{lyons2007} and the Mittag-Leffler function $E_{0,\gGamma(C_{p}+1)}$ as in Equation 1.2 of \cite{haubold2011}, thus the kernels are well-defined.
+        Symmetry and positive-semidefiniteness are obvious since both the signature kernel and the truncated signature kernel are inner products of their respective feature maps.
+    \end{proof}
+\end{theorem}
+\par One major practical issue with the kernels
+introduced above is that sequences are most certainly not observed as continuous paths but rather recorded in a finite amount of \textit{discrete timestamps} or increments. Under this assumption, \cite{kiraly2019} suggest using the following approximation,
+\begin{equation}\label{discrete-sig-kernel-approx}
+    \underset{1\leq i_1<\cdots<i_n\leq n}{\sum\cdots \sum}\gDelta X(t_{i_1})\otimes \cdots \otimes \gDelta X(t_{i_n})\approx\int_{\triangle_n(I)}\mathrm dX(t_1)\otimes \cdots\otimes \mathrm dX(t_n)
+\end{equation}
+where $\gDelta X(t_{i_j}):=X(t_{i_{j}})-X(t_{i_{j-1}})$ for every $j\in [n]$ are the first-order differences of $X$. Using this approximation is in fact justified, which was shown in Theorem 5 of \cite{kiraly2019}. 
+Thus the approximation in (\ref{discrete-sig-kernel-approx}) can be used in the following \textit{discretized version} of the signature kernel and likewise the truncated signature kernel.
+\begin{definition}[Discretized Signature Kernel]
+    Let $H$ be a Hilbert space, $I\subseteq \mathbb R$ be a compact interval and denote the length or number of elements of a sequence $X$ by $\vert X\vert$, then the \textit{discretized signature kernel} is denoted as
+    \begin{equation*}
+        \widetilde{\mathscr k}_{\mathtt{Sig}}(X,Y):=\sum_{n=0}^\infty\sum_{\substack{i\in \triangle_p([\vert X\vert])\\j\in \triangle_p([\vert Y\vert])}}\prod_{p=1}^n \,\langle\gDelta(X(t_i)), \gDelta Y(t_j)\rangle_H.
+    \end{equation*}
+    Similarly, the \textit{truncated discretized signature kernel} of order $n$ is defined as
+    \begin{equation*}
+        \widetilde{\mathscr k}^n_{\mathtt{Sig}}(X,Y):=\sum_{k=0}^n\sum_{\substack{i\in \triangle_p([\vert X\vert])\\j\in \triangle_p([\vert Y\vert])}}\prod_{p=1}^k \,\langle\gDelta(X(t_i)), \gDelta Y(t_j)\rangle_H.
+    \end{equation*}
+\end{definition}
+Note that in the discretized setting, for a discrete path $X$ with samples at times $t_0,\dots,t_n$, the $p$-variation norm from Definition \ref{p-var-def} reduces to
+\begin{equation*}
+    \|X\|_{p}=\left(\sum_{i=1}^n\|\gDelta X(t_i)\|^p\right)^{1/p}.
+\end{equation*}
+\chapter{Dimensionality Reduction}
+In the previous chapter, it became clear that the tensor structure of the signature transform is a fruitful framework for linear regression with theoretical performance guarantees, however a significant drawback is the rapidly increasing dimensionality of the truncated signature as seen in Proposition \ref{basis-tensor-prod}.
+In fact, for the truncated signature of order $n\in \mathbb N_{>0}$ and some path $X\in \mathscr V^{p}([0,s], H)$ with $p\in [1;2)$ for some finite-dimensional Hilbert space $H$,
+\begin{equation*}
+    \dim(\gpi_n^{T((H))}\circ \mathbb S_{0,s}(X))=\sum_{k=0}^n\dim(H^{\otimes k})=\begin{cases}
+        \frac{\dim(H)^{n-1}-1}{\dim(H)-1}&\;\textrm{ for }\dim(H)\geq 2;
+        \\ n+1 &\;\textrm{ for }\dim(H)= 1.
+    \end{cases}
+\end{equation*}
+As outlined in the previous section, kernel methods circumvent this issue with the kernel trick. However, they require the computation of the Gram matrix. Even for a dataset of moderate size this could become an issue since it scales quadratically in the number of sequences $n$ or more precisely as $\mathscr O(n^2L_{\max}^2\dim(H))$ where $L_{\max}$ \cite{toth2025} is the maximum length of a sequence. In the following chapter, we analyse two prominent dimensionality reduction techniques to achieve linear complexity in the number of sequences.
+
+\section{Random Fourier Features}
+To extend learning with shift-invariant kernels, i.e. kernels that are invariant under common translations, to large-scaled datasets, the work of \cite{rahimi2007} avoids relying on the kernel trick and explicitly computing the Gram matrix but instead approximates the kernel function directly using probabilistic techniques. They project the data to a low-dimensional Euclidean inner product space using a randomized feature map $z:H\to \mathbb R^d$ so that the inner product between a pair of transformed points is an unbiased estimator of the true kernel function. The image under $z$ is low-dimensional and thus enables using fast linear learning methods for training but also for evaluating; using (\ref{kernel-eval}) requires $\mathscr O(n\dim(H))$, however using the learned hyperplane after applying the random feature map only requires a complexity of $\mathscr O(\dim(H)+d)$ in time and storage \cite{rahimi2007}.
+The derivation of a possible random feature map, that satisfies the assumption of unbiasedness, is based on the following theorem, which is due to \cite{rudin1990}.
+\begin{theorem}[Bochner's Theorem]
+    A continuous, shift-invariant kernel $\mathscr k:\mathbb R^d\times \mathbb R^d\to \mathbb R$ is positive-definite iff $\mathscr k$ is the Fourier transform of a non-negative, finite measure $\gLambda$, 
+    \begin{equation*}
+        \mathscr k(x,y)=\int_{\mathbb R^d}\exp(\mathrm i\,\langle w,x-y\rangle )\,\mathrm d\gLambda(w).
+    \end{equation*}
+    $\gLambda$ is often referred to as spectral measure of $\mathscr k$.
+\end{theorem}
+An immediate consequence is that when scaling the kernel as $\mathscr k'(x,y)=\mathscr k(x,y)/\mathscr k(x,x)$, the spectral measure of $\mathscr k'$ becomes a probability measure since $\gLambda(\mathbb R^d)=\mathscr k(x,x)<\infty$. Setting $\gzeta_w(x)=\exp(\mathrm i\langle w,x\rangle)$, yields
+\begin{equation*}
+    \mathscr k'(x,y)=\frac{1}{\gLambda(\mathbb R^d)}\int_{\mathbb R^d}\gzeta_w(x)\overline{\gzeta_w(y)}\,\mathrm d\gLambda(w)=\mathbb E[\gzeta_w(x)\overline{\gzeta_w(y)}],
+\end{equation*}
+where $\overline{\gzeta_w(y)}$ denotes the complex conjugate and the expectation is taken wrt the probability measure $\gLambda(\cdot)/\gLambda(\mathbb R^d)$. Since $\mathscr k$ is real and subsequently also $\gLambda$, the complex exponential $\gzeta_w$ reduces to the cosine. This gives rise to the following
+\begin{theorem}[Random Fourier Features]\label{rff-def}
+    Let $\mathscr k:\mathbb R^d\times \mathbb R^d\to [0;\infty)$ be a shift-invariant, continuous and positive-definite kernel and $\gbeta\sim\textrm{Uniform(0,\,2\gpi)}$ be a random offset. Assume wlog that $\mathscr k$ is properly scaled such that its spectral measure $\gLambda$ is also a probability measure. Draw $n$ samples $w_1,\dots,w_n\sim \gLambda$ and define the feature map
+    \begin{equation*}
+        z_n(x)=\sqrt{\frac{2}{d}}(\cos (\langle w_1,x\rangle +\gbeta),\dots,\cos (\langle w_n,x\rangle +\gbeta))^\intercal,
+    \end{equation*} 
+    then 
+    \begin{equation*}
+        \mathscr k(x,y)=\mathbb E[\langle z_n(x), z_n(y)\rangle ].
+    \end{equation*}
+    \begin{proof}
+        Note that this follows pretty much by construction of the feature map. Let $(z_n(x))_i$ be the $i$-th component of $z_n(x)$. Then, for all $i\in [n]$, using basic identities from trigonometry, it holds that
+        \begin{equation*}
+        \begin{split}
+            &\,\mathbb E_{\gbeta}[(z_n(x))_i(z_n(y))_i]\\=&\,\mathbb E_{\gbeta}[\cos(\langle w_i,x\rangle +\gbeta)\cos(\langle w_i,y\rangle +\gbeta)]\\=&\,\frac{1}{2}\,\mathbb E_{\gbeta}[\cos(\langle w_i,x-y\rangle)+\cos(\langle w_i, x+y\rangle)+ 2\gbeta] \\=&\,\frac{1}{2}(\cos(\langle w_i,x-y\rangle)+(\cos(\langle w_i,x+y\rangle)\mathbb E_{\gbeta}[\cos(2\gbeta)]-\sin(\langle w_i,x+y\rangle)\mathbb E_{\gbeta}[\sin(2\gbeta)]))\\=&\,\frac{1}{2}(\cos(\langle w_i,x-y\rangle),
+        \end{split}
+        \end{equation*}
+        which already concludes the proof by linearity of expectation.
+    \end{proof}
+\end{theorem}
+The Random Fourier Signature kernel is thus simply a Monte-Carlo method for approximating the true kernel. The following theorem, concludes this introduction and shows that the feature map in Theorem \ref{rff-def} estimates the true kernel globally on compact sets $K\subseteq \mathbb R^d$ with arbitrary precision $\gepsilon>0$ \cite{rahimi2007} given the sample size
+\begin{equation*}
+    n=\gOmega\left(\frac{d}{\gepsilon^2}\ln\left(\frac{\gsigma_{\gLambda}^2\diam(K)}{\gepsilon}\right)\right).
+\end{equation*}
+\begin{theorem}[Uniform Convergence of Random Fourier Features \cite{rahimi2007}]\label{unif-conv-rff}
+Let $K\subseteq \mathbb R^d$ be a compact set and $\mathscr k:\mathbb R^d\times \mathbb R^d\to [0;\infty)$ a continuous, translation-invariant kernel such that its spectral measure $\gLambda$ has finite second moment $\gsigma_{\gLambda}^2<\infty$. Then, for samples $w_1,\dots,w_n\sim\gLambda$ iid and $\gepsilon>0$, 
+\begin{equation*}
+    \mathbb P\left(\sup_{x,y\in K}\left\vert \langle z_{n}(x), z_{n}(y)\rangle -\mathscr k(x,y) \right\vert \geq \gepsilon\right)\leq C_d  \left(\frac{2\gsigma_{\gLambda}^2\diam(K)}{\gepsilon}\right)^{2d/(d+2)}\exp\left(-\frac{n\gepsilon^2}{4(d+2)}\right)
+\end{equation*}
+where $z_{n}$ is the random mapping as in Theorem \ref{rff-def} and $C_d>0$ is a constant that only depends on $d$.
+\end{theorem}
+To prove the theorem, we need to introduce the following notions from combinatorics in metric spaces and two important concentration inequalities.
+\begin{definition}
+    Let $\gepsilon>0$, $(T,d)$ be a metric space and $A$ be a non-empty subset of $T$.
+    \par A set $N_{\gepsilon}\subseteq A$ is said to be a $\gepsilon$\textit{-net} for $A$ wrt $d$ if for every point $x\in A$, there exists a point $\gnu\in N_{\gepsilon}$ such that $d(x,\gnu)<\gepsilon$ \cite{clements1963}.
+\end{definition}
+\begin{theorem}[Markov's Inequality]
+    Let $X$ be a non-negative, integrable random variable and $\gepsilon>0$, then
+    \begin{equation*}\label{markovs_ineq}
+        \mathbb P\left(X\geq \gepsilon\right)\leq \frac{\mathbb E[X]}{\gepsilon}.
+    \end{equation*}
+    \begin{proof}
+       For each $\gepsilon>0$, it holds that $ X\geq \gepsilon\mathds{1}(\{X\geq \gepsilon\})$, and by the monotonicity of the expectation, we conclude
+       \begin{equation*}
+           \mathbb E[X]\geq \mathbb E[\gepsilon\mathds{1}(\{X\geq \gepsilon\})]=\gepsilon\mathbb P(X\geq \gepsilon).\qedhere
+       \end{equation*}
+    \end{proof}
+\end{theorem}
+\begin{theorem}[Hoeffding's Inequality]
+    Let $X_1,\dots,X_n$ be independent random variables such that $X_i\in [\galpha_i,\gbeta_i]$ a.s. Then for any $\gepsilon>0$,
+    \begin{equation*}
+        \mathbb P\left(\sum_{i=1}^n(X_i-\mathbb E[X_i])\geq \gepsilon\right)\leq \exp\left(-\frac{2\gepsilon^2}{\sum_{i=1}^n(\gbeta_i-\galpha_i)^2}\right)
+    \end{equation*}
+    \begin{proof}
+        See Theorem 2.2.1 in \cite{vershynin2018}.
+    \end{proof}
+\end{theorem}
+\begin{proof}[Proof of Theorem \ref{unif-conv-rff} (due to \cite{rahimi2007}).]
+    Since $K$ is compact, $\diam(K)<\infty$, thus one can define $K_{\gDelta}:=\{x-y:x,y\in K\}\subseteq B(0,2\diam(K))$. Further, because $\mathscr k$ is translation-invariant, one can write $\mathscr k(x,y)=\mathscr k_{\gDelta}(x-y)$ for some $\mathscr k_{\gDelta}:\mathbb R^d\to \mathbb R$ and all $x,y\in K$ wlog. Hence, 
+    \begin{equation*}
+        \sup_{x,y\in K}\left\vert \langle z_{n}(x),z_{n}(y)\rangle -\mathscr k(x,y) \right\vert=\sup_{\gdelta \in K_{\gDelta}}\bigl\vert \underbrace{\langle z_n(0),z_n(\gdelta)\rangle -\mathscr k_{\gDelta}(\gdelta)}_{r(\gdelta)} \bigr\vert,
+    \end{equation*}
+    which justifies proving the uniform bound over $K_{\gDelta}$. 
+    \par Since $K_{\gDelta}$ is compact, for $\geta>0$, there exists a finite $\geta$-net $N_{\geta}$ over $K_{\gDelta}$ \cite{clements1963}. Since $\diam(K_{\gDelta})\leq 2\diam(K)$ a standard volumetric bound \cite{cucker2001} yields
+    \begin{equation}\label{rff_vol_bound}
+        \vert N_{\geta}\vert \leq \left(\frac{4\diam(K)}{\geta}\right)^d.
+    \end{equation}
+    By differentiating one obtains
+    \begin{equation*}
+        \nabla \langle z_n(0),z_n(\gdelta)\rangle =-\frac{1}{n}\sum_{i=1}^nw_i\sin(\langle w_i,\gdelta\rangle)
+    \end{equation*}
+    and thus $\mathbb E[\nabla r(\gdelta)]=0$. Now it follows that,
+    \begin{equation}\label{rff_rem_bound}
+        \mathbb E[\|\nabla r(\gdelta)\|^2_2]\leq \frac{\gsigma_{\gLambda}^2}{n}
+    \end{equation}
+    for all $\gdelta\in K_{\gDelta}$. Let $\gdelta^\ast:=\argmax\{\|\nabla r(\gdelta)\|_2:\gdelta\in K_{\gDelta}\}$ and define the random Lipschitz constant $L_{\gLambda}:=\|\nabla r(\gdelta^\ast)\|_2$. By Markov's inequality and (\ref{rff_rem_bound}),
+    \begin{equation*}
+        \mathbb P\left(L_{\gLambda}\geq \frac{\gepsilon}{2\geta}\right)= \mathbb P\left(L_{\gLambda}^2\geq \frac{\gepsilon^2}{4\geta^2}\right)\leq  \frac{\mathbb E[\|\nabla r(\gdelta^\ast)\|_2^2]}{\gepsilon^2(4\geta^2)}\leq \left(\frac{2\geta\gsigma_{\gLambda}}{\gepsilon n}\right)^2.
+    \end{equation*}
+    Let $\gnu\in N_{\geta}$ be an arbitrary net-anchor. Then by Hoeffding's inequality, 
+    \begin{equation*}
+    \begin{split}
+        \mathbb P\left(\vert \langle z_n(0),z_n(\gnu)\rangle - \mathbb E[\langle z_n(0),z_n(\gnu)\rangle]\vert \geq \gepsilon\right)&=\mathbb P\left(\vert r(\gnu)\vert \geq \gepsilon\right)\leq 2\exp\left(-\frac{n\gepsilon^2}{8}\right)
+    \end{split}
+    \end{equation*}
+    since $\vert \langle z_n(0),z_n(\gnu)\rangle\vert = 1$.
+    By definition, for any $\gdelta\in K_{\gDelta}$ there exists a net-anchor $\gnu_{\gdelta}\in N_{\geta}$ such that $\|\gdelta- \gnu_{\gdelta}\|_2\leq \geta$. On the event 
+    \begin{equation*}
+        \mathscr E:= \left\{L_{\gLambda}\leq \frac{\gepsilon}{2\geta}\right\}\cap \left\{\max_{\gnu \in N_{\geta}} \vert r(\gnu)\vert\leq \frac{\gepsilon}{2}\right\}
+    \end{equation*}
+    it holds that,
+    \begin{equation*}
+    \begin{split}
+        \vert r(\gdelta)\vert &\leq \vert r(\gnu_{\gdelta})- r(\gdelta)\vert  + \vert  r(\gnu_{\gdelta})\vert
+        \\ &\leq L_{\gLambda}\|\gnu_{\gdelta}-\gdelta\|_2 + \max_{\gnu \in N_{\geta}} \vert r(\gnu)\vert \leq \gepsilon
+    \end{split}
+    \end{equation*}
+    for any $\gdelta \in K_{\gDelta}$ by the Lipschitz-continuity of $r$ . Thus, to show uniform concentration it remains to bound the complementary event $\mathscr E^\complement$ and show that it occurs with sufficiently low probability. Using a union bound over all anchors $\nu\in N_{\geta}$ and (\ref{rff_vol_bound}) it follows that,
+    \begin{equation*}\label{rff_unopt_ineq}
+    \begin{split}
+        \mathbb P\left(\sup_{\gdelta \in K_{\gDelta}}\vert r(\gdelta)\vert \geq \gepsilon\right)&\leq \inf_{\geta >0}\Biggl\{ \mathbb P\left(L_{\gLambda}\geq \frac{\gepsilon}{2\geta}\right)+\mathbb P\left(\bigcup_{\gnu\in N_{\geta}}\left\{r(\gnu)\geq \frac{\gepsilon}{2}\right\}\right)\Biggr\} \\ 
+        &\leq \inf_{\geta >0}\Biggl\{\left(\frac{2\geta}{\gepsilon n}\right)^2 \gsigma_{\gLambda}^2+2\vert N_{\geta}\vert \exp\left(-\frac{2n\gepsilon^2}{8}\right)\Biggr\} \\ 
+        &\leq \inf_{\geta >0}\Biggl\{\underbrace{\left(\frac{2}{\gepsilon n}\right)^2 \gsigma_{\gLambda}^2}_{c_1}\geta^2+\underbrace{\left(2^{2+1/d}\diam(K)\right)^d\exp\left(-\frac{n\gepsilon^2}{8}\right)}_{c_2} \geta^{-d}\Biggr\}.
+    \end{split}
+    \end{equation*}
+    Taking the derivative of $g(\geta):=c_1\geta^2+c_2\geta^{-d}$ yields the optimal solution
+    \begin{equation*}
+        \geta^\ast=\left(\frac{dc_1}{2c_2}\right)^{1/(d+2)}
+    \end{equation*}
+    By plugging $\geta^\ast$ back into (\ref{rff_unopt_ineq}) one obtains the final result, 
+    \begin{equation*}
+        \mathbb P\left(\sup_{\gdelta\in K_{\gDelta}}\vert r(\gdelta)\vert \geq \gepsilon\right)\leq C_d\left(\frac{\gsigma_{\gLambda}^2\diam(K)}{\gepsilon}\right)^{2d/(d+2)}\exp\left(-\frac{n\gepsilon^2}{4(d+2)}\right)
+    \end{equation*}
+    where 
+    \begin{equation*}
+        C_d:=2^{(6d+2)/(d+2)}\left(\left(\frac{d}{2}\right)^{2/(d+2)}+\left(\frac{2}{d}\right)^{d/(d+2)}\right)>0.\qedhere
+    \end{equation*}
+\end{proof}
+As mentioned previously, the complexity of the signature kernel scales poorly in the number of sequences. One possible way to enjoy the benefit of linear sequence length and low-dimensional feature complexity with theoretical guarantees is through Random Fourier Features \cite{toth2025}. 
+\par One particular issue worth mentioning is that a direct application of the standard Random Fourier Features as derived by Bochner’s theorem does not apply since the space of all sequences of bounded $p$-variation is not a linear space, however uniform bounds can still be derived using concentration inequalities and tail bounds similar to the Random Fourier Feature construction \cite{toth2025}.
+Assuming a.s. boundedness of the spectral measure in that case is a very restrictive assumption, whereas properties such as existence of the moment-generating function, tail bounds and moment-boundedness are sufficient for the statements to hold.
+\begin{definition}[Bernstein Moment Condition]
+    Let $\gLambda$ be a $d$-dimensional probability measure and take an arbitrary sample $w\in \mathbb R^d$, then it is called $(\galpha^2, \gbeta)$-Bernstein if there exist constants $\galpha^2, \gbeta>0$ such that
+    \begin{equation*}
+        \mathbb E[w_i^{2n}]\leq \frac{n!\galpha^2 \gbeta^{n-2}}{2}
+    \end{equation*}
+    for all $i\in [d]$, $n\in \mathbb N$.
+\end{definition}
+\begin{definition}[Random Fourier Signature Features]
+    Fix some truncation level $m\in \mathbb N$ and a translation-invariant, continuous, positive-definite kernel $\mathscr k:\mathbb R^d\times \mathbb R^d\to (0;\infty)$ with $(\galpha^2, \gbeta)$-Bernstein spectral measure $\gLambda$. Let $W^{(1)}, \dots,W^{(m)}\in \mathbb R^{d\times n}$ be Random Fourier Features, with each matrix $W^{(i)}\sim \gLambda$ containing $n$ iid samples for each $i\in [m]$. Define the random feature map
+    \begin{equation}\label{rfsf-feature-map}
+        \widetilde{\gphi}_i(X):=\frac{1}{\sqrt{n}}(\cos(\langle W^{(i)}, X\rangle )), \,\sin(\langle W^{(i)}, X\rangle ))^\intercal\in \mathbb R^{2n}
+    \end{equation}
+    for each $i\in [m]$ and the corresponding tensorized feature map
+    \begin{equation*}
+        \widetilde{\gphi}_{\mathtt{RFF}, m}(X):=\sum_{k=0}^m\sum_{i\in \triangle_k([\vert X\vert ])} \gDelta \widetilde{\gphi}_1(X(t_{i_1})\otimes \cdots \otimes \gDelta\widetilde{\gphi}_m(X(t_{i_k})
+    \end{equation*}
+    for all sequences $X\in \mathscr X_{\mathbb R^d}$ with the usual first-order difference $\gDelta\widetilde{\gphi}_i(X(t_{i_j}))=\widetilde{\gphi}_i(X(t_{i_j}))-\widetilde{\gphi}_i(X(t_{i_{j-1}}))$. Then the truncated \textit{Random Fourier Signature Feature} kernel of order $m$ is defined as
+    \begin{equation*}
+        \widetilde{\mathscr k}^m_{\mathtt{RFF}}(X,Y):=\langle  \widetilde{\gphi}_{\mathtt{RFF}, m}(X), \widetilde{\gphi}_{\mathtt{RFF}, m}(Y)\rangle_{T^{m}(\mathbb R^d)}.
+    \end{equation*}
+\end{definition}
+Note that the authors chose a different Random Fourier Feature Map, however this is still in line with the original construction from Theorem \ref{rff-def} due to the trigonometric identity $\cos(\galpha)\cos(\gbeta)+\sin(\galpha)\sin(\gbeta)=\cos(\galpha - \gbeta)$, thus the original shape, omitting the random shift sampled uniformly from $[0;2\gpi]$, is recovered by the bilinearity of the inner product. The discretized signature kernel is thus prepended by the Random Fourier Feature Map of some translation-invariant, continuous and positive-definite kernel $\mathscr k:\mathbb R^d\times \mathbb R^d\to (0;\infty)$, e.g. the RBF kernel \cite{toth2025}, to achieve considerable dimensionality reduction by mapping each sequence to a explicit finite-dimensional vector and skipping all pairwise interactions between sequences that are left to compute.
+The following theorem guarantees that the truncated discretized signature kernel can be approximated arbitrarily precise on the ball of sequences over compact state-spaces $K\subseteq \mathbb R^d$ and $1$-variation bounded by some constant.
+\begin{theorem}[Uniform Convergence of Random Fourier Signature Features]\label{unif-conv-rfsf}
+    Let $m\in \mathbb N$, $V>0$ and $\mathscr k:\mathbb R^d\times \mathbb R^d\to [0;\infty)$ be a continuous, positive-semidefinite and shift-invariant kernel with $(\galpha^2, \gbeta)$-Bernstein spectral measure $\gLambda$. Let $K\subseteq \mathbb R^d$ be a compact set, then we denote the set of all sequences with $p$-variation bounded by $V$ as 
+    \begin{equation*}
+        B_{\|\cdot \|_p,\,K}(0,V)=\{X\in \mathscr X_K:\|X\|_p\leq V\}.
+    \end{equation*}
+    Then we have that for all $\gepsilon>0$,
+    \begin{equation*}
+    \begin{split}
+        &\,\mathbb P\left(\sup_{X,Y\in B_{\|\cdot \|_1,\,K}(0,V)} \vert \widetilde{\mathscr k}^m_{\mathtt{Sig}}(X,Y)-\widetilde{\mathscr k}_{\mathtt{RFF}}^{m}(X,Y)\vert \geq \gepsilon\right)\\\leq&\,m\gtheta_{n, d,I}\left(\biggl(\frac{\gtau_{d,m,V}}{\gepsilon}\right)^{d/(d+1)}+d+1\biggr)\exp\left(-\gxi_{n, d,\gLambda}\min\left\{\left(\frac{\gepsilon}{\gtau_{d,m,V}}\right)^2, \left(\frac{\gepsilon}{\gtau_{d,m,V}}\right)^{1/m}\right\}\right),
+    \end{split}
+    \end{equation*}
+    with the constants defined as
+    \begin{equation*}
+        \begin{split}
+            \gtau_{d,m,V}&:=m(2V^2\max\{\|\mathbb E[ww^\intercal]\|_2^{1/2}, 1\}\max\{\gsigma^2_{\gLambda},d\})^m;
+            \\ \gxi_{n, d,\gLambda}&:=\frac{n}{2(d+1)(\galpha^2+\gbeta)};\\
+            \gtheta_{n, d,I}&:=2^{\frac{4(d+1)+1}{d+1}}\diam(K)^{\frac{d}{d+1}}\sum_{i,j=1}^d\left(\sup_{x,y\in K}\left\|\nabla \left(\frac{\partial \mathscr k(x,y)}{\partial x\partial y}\right)\right\|_2+\mathbb E[w_iw_j\|w\|_2]\right)^{d/(d+1)}.
+        \end{split}
+    \end{equation*}
+    \begin{proof}
+        See Theorem C.10 in \cite{toth2025}.
+    \end{proof}
+\end{theorem}
+The Random Fourier Signature Feature kernel enjoys linear complexity in the number of sequences $N$, or more precisely $\mathscr O(NL_{\max}(mnd+1+n+\cdots +n^m))$, however still admits a tensor structure and thus polynomial complexity in the number of Random Fourier Feature samples $n$ \cite{toth2025}.
+\section{Tensor Random Projections}
+Random projections replace the original high-dimensional dataset $D\in \mathbb R^{n\times d}$ by a linear subspace through the origin using a multiplication with a random matrix $A\in \mathbb R^{d\times k}$ where $k\ll \min\{n,d\}$ \cite{bingham2001}. Despite its name suggesting orthogonal columns, this does not need to be assumed for $A$, in fact it suffices if its columns have unit length. The idea of such projections is rooted in the Johnson-Lindenstrauss-Lemma, which states that if the dimension, which is projected onto, is chosen as $\mathscr O(\gepsilon^{-2}\ln(n))$, \textit{all} pairwise Euclidean distances and inner products are preserved up to precision $(1\pm\gepsilon)$ for any $\gepsilon\in (0;1)$ \cite{dasgupta2003}. Usually the random matrix entries are chosen to be iid Gaussian, however all zero-mean, unit-variance distributions could be applied in this framework \cite{bingham2001}. Low memory versions of random projections were introduced by \cite{achlioptas2001} and subsequently the computationally more efficient \textit{very-sparse random projection} followed, which was developed by \cite{ping2006} for fast querying in database applications. 
+\begin{definition}[Very-Sparse Random Projection]\label{very-sparse-rp-def}
+    Let $D\in \mathbb R^{n\times d}$ be a dataset. The \textit{very-sparse random projection matrix} $\gPi\in \mathbb R^{d\times k}$ is based on the sparse projection matrix by \cite{achlioptas2001} and defined as
+    \begin{equation*}
+        \gPi_{ij}:=\begin{cases}
+            -\sqrt{\gtheta}\;&\textrm{ with probability }1/(2\gtheta)\\0\;&\textrm{ with probability }1-1/\gtheta\\\sqrt{\gtheta}\;&\textrm{ with probability }1/(2\gtheta)
+        \end{cases}
+    \end{equation*}
+    for some sparsity parameter $\theta$ that can be chosen as $\gtheta\in [1,\sqrt{d}]$. 
+\end{definition}
+Tensor random projections extend this to tensor features. In alignment with Proposition \ref{basis-tensor-prod}, the tensor products' dimensions grow rapidly. To reduce storage requirements for the equally large random projections, \cite{sun2021} suggest using the matching column-wise Kronecker product, or Khatri-Rao product. For two matrices $A\in \mathbb R^{n\times k}$, $B\in \mathbb R^{m\times k}$, their \textit{Khatri-Rao product} is defined as
+\begin{equation*}
+    A\odot B:=\begin{pmatrix}
+        A_{11}B_{\ast,1} & \cdots &A_{1k}B_{\ast,k}\\
+        \vdots & \ddots & \vdots  \\
+        A_{n1}B_{\ast,1} &\cdots &A_{nk}B_{\ast,k}
+    \end{pmatrix}\in \mathbb R^{nm\times k}.
+\end{equation*}
+\begin{definition}[Tensor Random Projection]
+    Let $T\in (\mathbb R^{d})^{\otimes n}$ and take arbitrary random projections $A_i\in \mathbb R^{d\times k}$ for each $i\in [n]$, then the \textit{tensor random projection} map according to \cite{sun2021} is defined as 
+    \begin{equation*}
+        \gPi_{\mathtt{TRP}}(T):=\langle(A_1\odot \cdots \odot A_n), \mathrm{vec}(T)\rangle\in \mathbb R^{d^n\times k},
+    \end{equation*}
+    where $\mathrm{vec}(T)$ is the vectorization of $T$, which takes the coefficients of a tensor in a fixed basis and stacks them into one long vector.
+\end{definition}
+Using this representation reduces the number of random variables from $\mathscr O(kd)$ to $\mathscr O(k\sqrt[n]{d})$, which is a substantial improvement for large $d$.
+Recall that previously introduced Random Fourier Signature Feature kernel, which reduces the computation to a finite-dimensional feature space using the random feature map, is still tensor-valued and thus incurs a  polynomial cost in the number of Random Fourier Feature samples $n$. This is where tensor random projections shine by further reducing the dimensionality in an efficient manner.
+\begin{definition}[Random Fourier Signature Features, Tensor Random Projection]\label{rfsf-trp-def}
+    Fix some truncation level $m\in \mathbb N$ and take a translation-invariant, continuous, positive-definite kernel $\mathscr k:\mathbb R^d\times \mathbb R^d\to (0;\infty)$ with $(\galpha^2, \gbeta)$-Bernstein spectral measure $\gLambda$. Let $W^{(1)}, \dots,W^{(m)}\in \mathbb R^{d\times n}$ be Random Fourier Features, with each matrix $W^{(i)}\sim \gLambda$ containing $n$ iid samples for each $i\in [m]$. Further, let $\gPi^{(1)},\dots,\gPi^{(m)}\in \mathbb R^{2n\times n}$ be iid very-sparse random projections with sparsity parameter $2n$. Define the random feature map
+    \begin{equation*}
+        \widetilde{\gphi}^m_{\mathtt{TRP}}(X):=\sum_{k=0}^m\sum_{i\in \triangle_k(\vert X\vert )}\langle \gPi^{(1)},\gDelta\widetilde{\gphi}_1{X(t_{i_1})} \rangle \,\odot \cdots \odot\,\langle \gPi^{(k)},\gDelta\widetilde{\gphi}_k{X(t_{i_k})} \rangle 
+    \end{equation*}
+    for all $X\in \mathscr X_{\mathbb R^d}$ and $\widetilde{\gphi}$ as defined in (\ref{rfsf-feature-map}). Then the \textit{Very-Sparse Tensor Random Projected Random Fourier Signature Feature} kernel is defined as 
+    \begin{equation*}
+        \widetilde{\mathscr k}^m_{\mathtt{TRP}}(X,Y):=\langle \widetilde{\gphi}^m_{\mathtt{TRP}}(X), \widetilde{\gphi}^m_{\mathtt{TRP}}(Y)\rangle_{T^{m}(\mathbb R^d)}
+    \end{equation*}
+    for any $X,Y\in \mathscr X_{\mathbb R^d}$.
+\end{definition}
+Thus, the tensor random projected variant is simply equivalent to applying the Khatri-Rao product of $k$ very-sparse random projections, i.e. the $\gPi_{\mathtt{TRP}}$ operator to the Random Fourier Feature map from (\ref{rfsf-feature-map}). 
+\par To prove a uniform approximation bound, we will need make statements about the tails and moment-boundedness, which requires the introduction of following quasi-norm.
+\begin{definition}[Orlicz Norm]\label{orlicz-norm}
+    Let $X$ be a real, integrable random variable and $\gpsi:\mathbb R\to \mathbb R$ be a non-decreasing, convex function such that $\gpsi(0)=0$, then the \textit{Orlicz Norm} of $X$ wrt $\gpsi$ is given by
+    \begin{equation}\label{orlicz-norm-eq}
+        \|X\|_{\gpsi}:=\inf\left\{t>0:\mathbb E\left[\gpsi\left(\frac{\vert X\vert }{t}\right)\right]\leq 1\right\}.
+    \end{equation}
+    adhering to the convention $\inf \emptyset =\infty$. Throughout the following pages, for any $\galpha > 0$, $\|\cdot \|_{\gpsi_{\galpha}}$ denotes the Orlicz Norm wrt to $\gpsi(x)=\exp\left(x^{\galpha}\right)-1$ \cite{toth2025}.
+\end{definition}
+Strictly speaking, (\ref{orlicz-norm-eq}) is only for $\galpha\geq 1$ a well-defined norm, otherwise the triangle inequality does \textit{not} hold. Nonetheless, the above expression is sensible for any $\galpha\in (0;\infty)$, and we choose to call it a norm in these cases as well.
+\begin{theorem}[Pointwise Convergence of Very-Sparse Tensor Random Projected Random Fourier Signature Feature Kernel]\label{pointwise-conv-rfsf-trp}
+   In the setting of Definition \ref{rfsf-trp-def}, it holds that for all $\gepsilon>0$,
+   \begin{equation*}
+       \boxed{\mathbb P\left(\vert \widetilde{\mathscr k}^m_{\mathtt{TRP}}(X,Y)-\widetilde{\mathscr k}^m_{\mathtt{RFF}}(X,Y)\vert\geq \gepsilon \right)\leq 6m\gPsi(\gLambda)^{dk}\exp(-\min\{\gPhi_1(\gLambda, X,Y, \gepsilon), \gPhi_2(\gLambda,X,Y,\gepsilon)\})}
+   \end{equation*}
+   with constants as defined in (\ref{constants-rfsf-trp}).
+\end{theorem}
+Before proving this pointwise bound, we will need the following chain of lemmas.
+\begin{corollary}[Chernoff's Bound]
+    Let $X$ be a random variable, $\gepsilon>0$, then
+\begin{equation*}
+    \mathbb P(X\geq \gepsilon)\leq \inf_{\glambda \geq 0}\exp\left(-\glambda\gepsilon +\log(\mathbb E[\exp(\glambda X)])\right).
+\end{equation*}
+    \begin{proof}
+        See Theorem 2.3.1 in \cite{vershynin2018}. 
+    \end{proof}
+\end{corollary}
+\begin{lemma}[Young's Inequality]
+    Let $p,q>0$ such that $1/p+1/q=1$. Then, for every $a,b\geq 0$, it holds that
+    \begin{equation*}
+        ab\leq \frac{a^p}{p}+\frac{b^q}{q}.
+    \end{equation*}
+    \begin{proof}
+        See Lemma A.3 in \cite{toth2025}.
+    \end{proof}
+\end{lemma}
+\begin{lemma}[Reverse Young's Inequality]
+    Let $p,q>0$ such that $1/p-1/q=1$. Then, for every $a\geq 0$, $b>0$, it holds that
+    \begin{equation*}
+        ab\geq  \frac{a^p}{p}-\frac{b^{-q}}{q}.
+    \end{equation*}
+    \begin{proof}
+        See Lemma A.4 in \cite{toth2025}.
+    \end{proof}
+\end{lemma}
+\begin{lemma}\label{orlicz-norm-tail}
+Let $X$ be a real, integrable random variable. Iff $\|X\|_{\gpsi_{\galpha}}\leq C_{\galpha} K$ for $\galpha>0$ and some constant $C_{\galpha}$ that only depends on $\galpha$, then
+\begin{equation*}
+    \mathbb P( \vert X\vert  \geq \gepsilon\vert )\leq C_{\galpha}'\exp\left(-\frac{\gepsilon^{\galpha}}{K^{\galpha}}\right)
+\end{equation*}
+for all $\gepsilon>0$ and some constant $C_{\galpha}'$ that only depends on $C_{\galpha}$.
+\begin{proof}
+    Assume wlog $\|X\|_{\gpsi_{\galpha}}\leq K$, then by definition,
+    \begin{equation*}
+        \|X\|_{\gpsi_{\galpha}}=\inf\left\{t>0:\exp\left(\frac{\vert X\vert ^{\galpha}}{t^{\galpha}}\right)\leq 2\right\}\leq K.
+    \end{equation*}
+    It follows by Markov's inequality (\ref{markovs_ineq}) that,
+    \begin{equation*}
+        \mathbb P(\vert X\vert \geq \gepsilon)\leq \exp\left(-\frac{\gepsilon^{\galpha}}{K^{\galpha}}\right)\mathbb E\left[\exp\left(\frac{\gepsilon^{\galpha}}{K^{\galpha}}\right)\right]\leq 2\exp\left(-\frac{\gepsilon^{\galpha}}{K^{\galpha}}\right)
+    \end{equation*}
+    by applying $\gphi(x)=\exp(x^{\galpha}/K^{\galpha})$ on both sides of the inequality.
+    For the converse implication, assume that, there exists $C_{1,\galpha}>0$ such that
+    \begin{equation*}
+        \mathbb P( \vert X\vert  \geq \gepsilon\vert )\leq C_{1,\galpha}\exp\left(-\frac{\gepsilon^{\galpha}}{K^{\galpha}}\right).
+    \end{equation*}
+    Then, for some $C_{2,\galpha}>1$, it follows by the Layer Cake formula that,
+    \begin{equation*}
+    \begin{split}
+        \mathbb E\left[\exp\left(\left(\frac{\vert X\vert}{C_{2,\galpha}K}\right)^{\galpha} \right)\right]&=1 +\int_{1}^\infty \mathbb P\left(\exp\left(\left(\frac{\vert X\vert}{C_{2,\galpha}K}\right)^{\galpha} \right) \geq t\right)\,\mathrm dt
+    \end{split}
+    \end{equation*}
+    since $\vert X\vert/({C_{2,\galpha}K})\geq 0$ a.s. Using a change of variables $u=\exp(t)$, one obtains
+    \begin{equation*}
+    \begin{split}
+        \mathbb E\left[\exp\left(\left(\frac{\vert X\vert}{C_{2,\galpha}K}\right)^{\galpha} \right)\right]&=1+\int_0^\infty \exp(u)\mathbb P(\vert X\vert \geq C_{2,\galpha} Ku^{1/\galpha})\,\mathrm du \\&\leq 1 + 2C_{1,\galpha}\int_0^\infty\exp\left(u(1-C_{2,\galpha}^{\galpha})\right)\,\mathrm du \\
+        &=1+\frac{2C_{1,\galpha}}{C_{2,\galpha} - 1}.
+    \end{split}
+    \end{equation*}
+    The claim follows by choosing $C_{1,\galpha}=1$ and $C_{2,\galpha}=3^{1/\galpha}$.
+\end{proof}
+\end{lemma}
+\begin{theorem}[Bennet's Inequality]
+For a random variable $X$ with $\vert X-\mathbb E[X]\vert \leq C$ a.s. and $\mathrm{Var}(X)=\gsigma^2$, it holds that
+\begin{equation}\label{bennet_ineq}
+    \mathbb P(\vert X-\mathbb E[X]\vert\geq \gepsilon)\leq 2\exp\left(-\frac{\gepsilon^2}{2\gsigma^2+\frac{2}{3}C\gepsilon}\right).
+\end{equation}
+\begin{proof}
+    Let $\glambda\in \mathbb R$. Set $Y:=X-\mathbb E[X]$. Since $\vert Y\vert \leq C$ by assumption, it holds that
+    \begin{equation*}
+       \left\vert \mathbb E\left[Y^k\right]\right\vert \leq\mathbb E\left[\left\vert Y^k\right\vert\right]\leq C^{k-2}\gsigma^2.
+    \end{equation*}
+    Using the power series expansion and the fact that $\log(1+u)\leq u$ for all $u\geq 0$, one obtains
+    \begin{equation*}
+        \log(\mathbb E[\exp(\glambda Y)])\leq \sum_{k=2}^\infty \frac{\glambda^k}{k!}\left\vert \mathbb E\left[Y^k\right]\right\vert \leq \frac{\gsigma^2}{C^2}(\exp(\vert \glambda\vert C) - \vert \glambda\vert C- 1).
+    \end{equation*}
+    Let $\gepsilon>0$. By applying Chernoff's bound, it follows that
+    \begin{equation}\label{bennet_ineq_chernoff}
+        \mathbb P(Y\geq \gepsilon)\leq \inf_{\glambda\geq 0}\exp\Bigl(-\glambda \gepsilon+\frac{\gsigma^2}{C^2}(\exp(\glambda C)-\glambda C - 1)\Bigr).
+    \end{equation}
+    Using the Taylor series expansion of the exponential, one bounds the second part of the exponent as follows
+    \begin{equation*}
+    \begin{split}
+        \exp(\glambda C)-\glambda C-1\leq \frac{(\glambda C)^2}{2}+\sum_{k=3}^\infty \frac{(\glambda C)^k}{k!}\leq \frac{(\glambda C)^2}{2}+\frac{1}{2}\sum_{k=3}^\infty\frac{(\glambda C)^k}{3^{k-2}}\\ 
+        \leq \frac{(\glambda C)^2}{2}+\frac{(\glambda C)^2}{2}\sum_{i=1}^\infty \frac{(\glambda C)^i}{3^i} = \frac{(\glambda C)^2}{2}\sum_{i=0}^\infty\frac{(\glambda C)^i}{3^i}.
+    \end{split}
+    \end{equation*}
+    For $\glambda C<3$ the geometric series converges and thus,
+    \begin{equation}\label{bennet_ineq_taylor}
+         \exp(\glambda C)-\glambda C-1\leq \frac{\glambda^2C^2}{2(1-\glambda C/3)}.
+    \end{equation}
+    Choosing $\glambda\overset{!}{=}\gepsilon/(C(\gsigma^2+ \gepsilon/3))$ and plugging into (\ref{bennet_ineq_chernoff}) yields
+    \begin{equation}\label{benett_ineq_oneside}
+        \mathbb P(Y\geq \gepsilon)\leq \exp\left(-\frac{\gepsilon^2}{2\left(\gsigma^2+C\gepsilon/3\right)}\right).
+    \end{equation}
+    One concludes the proof by applying (\ref{benett_ineq_oneside}) to $-Y$ and using a union bound.
+\end{proof}
+\end{theorem}
+\begin{corollary}[Bernstein's Inequality]\label{bernstein_ineq}
+Let $X_1,\dots,X_n$ iid such that $\vert X_i\vert \leq C$ a.s. and $\mathrm{Var}(X_i)=\gsigma^2/n$ for all $i\in [n]$ , then
+\begin{equation*}
+    \mathbb P\left(\left\vert \sum_{i=1}^nX_i-\mathbb E[X_i]\,\right\vert\geq \gepsilon\right)\leq 2 \exp\left(-c\min\left\{\frac{\gepsilon^2}{\gsigma^2}, \frac{\gepsilon}{C}\right\}\right)
+\end{equation*}
+for all $\gepsilon>0$.
+\begin{proof}
+    By Bennet's inequality (\ref{bennet_ineq}), 
+    \begin{equation*}
+        \mathbb P\left(\left\vert \sum_{i=1}^n X_i-\mathbb E[X_i]\,\right\vert \geq \gepsilon\right)
+\leq
+2\exp\Biggl(
+  -\underbrace{\frac{\varepsilon^2}{2\sigma^2+\tfrac{2}{3}C\varepsilon}}_{f(\varepsilon)}
+\Biggr).
+    \end{equation*}
+    Basic arithmetic yields,
+    \begin{equation*}
+        f(\gepsilon)\gtrsim\frac{\gepsilon^2}{\gsigma^2}\mathds{1}\left\{\gepsilon^2\leq \frac{\gsigma^2}{C}\right\}+\frac{\gepsilon}{C}\mathds{1}\left\{\gepsilon^2> \frac{\gsigma^2}{C}\right\}
+    \end{equation*}
+    and subsequently applying the minimum and plugging into (\ref{bernstein_ineq}) concludes the proof.
+\end{proof}
+\end{corollary}
+\begin{lemma}\label{bernstein-corollary-2}
+Let $X_1,\dots,X_n$ be iid such that for some $\galpha \in (0,1]$ and all $i\in [n]$, $\|X_i\|_{\gpsi_{\galpha}}\leq \gsigma$, then
+\begin{equation*}
+    \mathbb P\left(\left\vert\frac{1}{n}\sum_{i=1}^nX_i-\mathbb E[X_i]\,\right\vert \geq \gepsilon\right)\leq 2\exp\left(-Cn\min\left\{\left(\frac{\gepsilon}{\gsigma}\right)^{2}, \left(\frac{\gepsilon}{\gsigma}\right)^{\galpha}\right\}\right)
+\end{equation*}
+for all $\gepsilon > 0$ and some constant $C>0$.
+\begin{proof}
+First, we show that tail and second moment are sufficiently bounded. For any $\gepsilon>0$ and $i\in [n]$ by Lemma \ref{orlicz-norm-tail}
+\begin{equation}\label{tail}
+    \mathbb P\left(\vert X_i\vert \geq \gepsilon \right)\leq 2\exp\left(-\frac{\gepsilon^{\galpha}}{\gsigma^{\galpha}}\right).
+\end{equation}
+For the second moment, it holds that,
+\begin{equation*}
+\begin{split}
+    \mathbb E\left[\vert X_i\vert ^2\right]\leq \int_0^\infty\mathbb P(\left\vert X_i\right\vert ^2\geq t)\,\mathrm dt\leq 2\int_0^\infty u\mathbb P(\vert X_i\vert \geq u)\,\mathrm du\leq 4\int_0^\infty u\exp\left(-\frac{u^{\galpha}}{\gsigma^{\galpha}}\right)\,\mathrm du
+\end{split}
+\end{equation*}
+by using a change of variables and the bound from (\ref{tail}). Finally, applying another change of variables yields
+\begin{equation}\label{sec_mom}
+    \mathbb E\left[\vert X_i\vert ^2\right]\leq\frac{4\gsigma^2}{\galpha}\int_0^\infty t^{\frac{2}{\galpha}- 1}\exp(-t)\,\mathrm dt=\frac{4\gsigma^2}{\galpha}\gGamma\left(\frac{2}{\galpha}\right)=C_{\galpha}\gsigma^2;\, C_{\galpha}:=\frac{4}{\galpha}\gGamma\left(\frac{2}{\galpha}\right).
+\end{equation}
+Now, fix some threshold $\gtau > 0$ and observe that for all $i\in [n]$,
+\begin{equation*}
+    X_i=\underbrace{X_i \mathds{1}\{\vert X_i\vert \leq \gtau\}}_{Y_i}+ \underbrace{X_i \mathds{1}\{\vert X_i\vert > \gtau\}}_{\gxi_i}.
+\end{equation*}
+Hence, for all $\gepsilon>0$, 
+\begin{equation*}
+    \mathbb P\left(\left\vert\frac{1}{n}\sum_{i=1}^nX_i\,\right\vert \geq \gepsilon\right)\leq \sum_{i=1}^n\mathbb P\left(\left\vert Y_i - \mathbb E[Y_i] \right \vert \geq \frac{\gepsilon}{2}\right) + \sum_{i=1}^n\mathbb P\left(\left\vert \gxi_i - \mathbb E[\gxi_i] \right \vert \geq \frac{\gepsilon}{2}\right).
+\end{equation*}
+By definition, $\vert Y_i-\mathbb E[Y_i]\vert \leq 2\gtau$ and furthermore from (\ref{sec_mom}) one obtains,
+\begin{equation*}
+    \sum_{i=1}^n\mathrm{Var}(Y_i)\leq \sum_{i=1}^n\mathbb E\left[X_i^2\right]\leq C_{\galpha}n\gsigma^2.
+\end{equation*}
+Thus, by Bernstein's inequality (\ref{bernstein_ineq}), for all $\gepsilon>0$,
+\begin{equation}\label{bounded_bound}
+    \mathbb P\left(\left\vert\frac{1}{n}\sum_{i=1}^n Y_i-\mathbb E[Y_i]\,\right\vert\geq \frac{\gepsilon}{2}\right)\leq 2\exp\left(-\frac{n\gepsilon^2}{C_{\galpha}\gsigma^2+\gtau \gepsilon}\right).
+\end{equation}
+By a union bound on the occurrence of a tail and using (\ref{tail}) one obtains
+\begin{equation*}
+    \mathbb P\left(\left\vert\sum_{i=1}^n\gxi_i-\mathbb E[\gxi_i]\,\right\vert\geq \frac{\gepsilon}{2}\right)\leq \mathbb P\left(\bigcup_{i=1}^n\left\{\vert X_i\vert >\gtau\right\}\right)\leq n\mathbb P(\vert X_1\vert >\gtau)\leq 2n\exp\left(-\frac{\gtau^{\galpha}}{\gsigma^{\galpha}}\right).
+\end{equation*}
+Combining both bounds yields
+\begin{equation*}
+    \mathbb P\left(\left\vert\sum_{i=1}^n X_i-\mathbb E[X_i]\,\right\vert\geq \gepsilon\right)\leq 2\exp\left(-\frac{n\gepsilon^2}{C_{\galpha}\gsigma^2+\gtau \gepsilon}\right)+2n\exp\left(-\frac{\gtau^{\galpha}}{\gsigma^{\galpha}}\right)
+\end{equation*}
+Setting $\gtau\overset{!}{=}C_{\galpha} \gepsilon n^{1/\galpha}>0$, one yields for the exponent in (\ref{bounded_bound})
+\begin{equation*}
+    \geta=\frac{n\gepsilon^2}{C_{\galpha}\gsigma^2+\gtau \gepsilon}= \frac{n\gepsilon^2}{C_{\galpha}(\gsigma^2+n^{1/\galpha}\gepsilon^2)}\geq \frac{1}{2C_{\galpha}} \left(\frac{n\gepsilon^2}{\gsigma^2}\right)
+\end{equation*}
+by splitting and bounding according to
+\begin{equation*}
+    \begin{split}
+        \geta&=\geta\mathds{1}\left\{\geta\leq \gsigma^2n^{-1/\galpha} \right\}+\geta\mathds{1}\left\{\geta>\gsigma^2n^{-1/\galpha} \right\} \\
+        &\geq \frac{1}{2C_{\galpha}}\left(\frac{n\gepsilon^2}{\gsigma^2}+n^{1-1/\galpha}\right)\geq \frac{1}{2C_{\galpha}}\left(\frac{n\gepsilon^2}{\gsigma^2}\right).
+    \end{split}
+\end{equation*}
+Thus by combining,
+\begin{equation*}
+     \mathbb P\left(\left\vert\sum_{i=1}^nX_i-\mathbb E[X_i]\,\right\vert\geq \gepsilon\right)\leq 2\exp\left(-C\frac{n\gepsilon^2}{\gsigma^2}\right) + 2\exp\left(-C\frac{n\gepsilon^{\galpha}}{\gsigma^{\galpha}}\right).
+\end{equation*}
+with $C:=\min\{1/2C_{\galpha},C_{\galpha}^{\galpha}\}$. Using the relation 
+\begin{equation*}
+    a+b \leq 2\exp(-\min\{-\log (a),-\log (b)\}),
+\end{equation*}
+for $a,b>0$ concludes the proof.
+\end{proof}
+\end{lemma}
+\begin{lemma}\label{vs-trp-sp-bound}
+Let $p\sim \gPi$ be a random vector with $p\in\mathbb R^n$ sampled from the very-sparse random projection as in Definition \ref{very-sparse-rp-def}, then for any $v\in \mathbb R^n$
+\begin{equation*}
+    \|\langle p,v\rangle\|_{\gpsi_2}\leq C \sqrt{s}\|v\|_2
+\end{equation*}
+for some constant $C>0$.
+\begin{proof}
+    Observe that, $\mathbb E\left[\langle p,v\rangle\right]=0$, $\mathbb E\left[\langle p,v\rangle ^2\right]=\|v\|_2^2$ and $p_iv_i\in\{-\sqrt{s}v_i, \sqrt{s}v_i\}$. By Hoeffding's inequality,
+    \begin{equation*}
+        \mathbb P\left(\left\vert \langle p,v\rangle \right\vert \geq \gepsilon\right)\leq 2\exp\left(-\frac{\gepsilon^2}{2s\|v\|_2^2}\right)
+    \end{equation*}
+    for all $\gepsilon>0$. Thus, by Lemma \ref{orlicz-norm-tail} it follows that,
+    \begin{equation*}
+        \|\langle p,v\rangle \|_{\gpsi_2}\leq C\sqrt{s}\|v\|_2.\qedhere
+    \end{equation*}
+\end{proof}
+\end{lemma}
+\begin{lemma}\label{prod-orlicz-norm-bound}
+    Let $X,Y$ be independent random variables such that $\|X\|_{\gpsi_2}, \|Y\|_{\gpsi_2}< \infty$, then 
+    \begin{equation*}
+        \|XY\|_{\gpsi_1}\leq \|X\|_{\gpsi_2}\|Y\|_{\gpsi_2}.
+    \end{equation*}
+    \begin{proof}
+        By Young's inequality it holds that,
+        \begin{equation*}
+            \frac{\vert XY\vert}{\|X\|_{\gpsi_2}\|Y\|_{\gpsi_2}}\leq \frac{X^2}{2\|X\|_{\gpsi_2}^2} +\frac{Y^2}{2\|Y\|_{\gpsi_2}^2}.
+        \end{equation*}
+        Taking the exponential on both sides and subsequently applying the Cauchy-Schwarz-inequality yields
+        \begin{equation*}
+        \begin{split}
+            \mathbb E\left[\exp\left(\frac{\vert XY\vert}{\|X\|_{\gpsi_2}\|Y\|_{\gpsi_2}}\right)\right]&\leq \mathbb E\left[\exp\left(\frac{X^2}{2\|X\|^2_{\gpsi_2}}+\frac{Y^2}{2\|Y\|^2_{\gpsi_2}}\right)\right]\\&\leq\left( \mathbb E\left[\exp\left(\frac{X^2}{\|X\|^2_{\gpsi_2}}\right)\right]\right)^{1/2}\left( \mathbb E\left[\exp\left(\frac{Y^2}{\|Y\|^2_{\gpsi_2}}\right)\right]\right)^{1/2}\leq 2,
+        \end{split}
+        \end{equation*}
+        where the last inequality follows from the Definition \ref{orlicz-norm} and likewise the claim.
+    \end{proof}
+\end{lemma}
+\begin{lemma}\label{prod-orlicz-norm-subexp}
+    Let $X_1,\dots,X_n$ be independent random variables such that $\|X_i\|_{\gpsi_1}<\infty$, then
+    \begin{equation*}
+        \left\|\,\prod_{i=1}^nX_i\,\right\|_{\gpsi_{1/n}}\leq \prod_{i=1}^n\|X_i\|_{\gpsi_1}.
+    \end{equation*}
+    \begin{proof}
+        By the inequality of arithmetic and geometric means and subsequent exponentiation of both sides, it holds that
+        \begin{equation}\label{prod-orlicz-norm-subexp-eq1}
+            \exp\left(\left(\prod_{i=1}^n\frac{\vert X_i\vert}{\|X_i\|_{\gpsi_1}}\right)^{1/n}\right)\leq \exp\left(\frac{1}{n}\sum_{i=1}^n\frac{\vert X_i\vert}{\|X_i\|_{\gpsi_1}}\right).
+        \end{equation}
+        Applying Hölder's inequality to the right hand side yields
+        \begin{equation}\label{prod-orlicz-norm-subexp-eq2}
+            \mathbb E\left[\prod_{i=1}^n\exp\left(\frac{\vert X_i\vert}{n\|X_i\|_{\gpsi_1}}\right)\right]\leq \prod_{i=1}^n\left(\mathbb E\left[\exp\left(\frac{\vert X_i\vert }{\|X_i\|_{\gpsi_1}}\right)\right]\right)^{1/n}\leq 2,
+        \end{equation}
+        where the last inequality is due to Definition \ref{orlicz-norm}. The claim follows by combining the bounds in (\ref{prod-orlicz-norm-subexp-eq1}) and (\ref{prod-orlicz-norm-subexp-eq2}) and using Definition \ref{orlicz-norm}.
+    \end{proof}
+\end{lemma}
+\begin{lemma}\label{triangle-ineq-orlicz-norm}
+    Let $X_1,\dots,X_n$ be independent random variables such that for some $\galpha \in (0;1]$, $\|X_i\|_{\gpsi_{\galpha}}$ for all $i\in [n]$, then
+    \begin{equation*}
+    \left\|\,\sum_{i=1}^nX_i\,\right\|_{\gpsi_{\galpha}}\leq2^{(n-1)/\galpha}\sum_{i=1}^n\|X_i\|_{\gpsi_{\galpha}}.
+    \end{equation*}
+    \begin{proof}
+        See Lemma A.9 in \cite{toth2025}.
+    \end{proof}
+\end{lemma} 
+We have now introduced all necessary inequalities to prove the pointwise bound in Theorem \ref{pointwise-conv-rfsf-trp}.
+\begin{proof}[Proof of Theorem \ref{pointwise-conv-rfsf-trp}]
+        Recall that $m\in \mathbb N$ is the truncation level. Then by Equation 3.9 in \cite{toth2025}, it holds that
+        \begin{equation*}
+            \widetilde{\mathscr k}_{\mathtt{TRP}}^m(X,Y)=\sum_{k=0}^m \gzeta_{\mathtt{TRP}, \,k};\;\widetilde{\mathscr k}_{\mathtt{RFF}}^m(X,Y)=\sum_{k=0}^m \gzeta_{\mathtt{RFF},\,k}
+        \end{equation*}
+        with
+        \begin{equation*}
+            \gzeta_{\mathtt{TRP}, k}:= \frac{1}{n}\sum_{q=1}^nZ_{q,k};\;Z_{q,k}:=\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}}\prod_{p=1}^k \langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle \;\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle
+        \end{equation*}
+        By linearity of expectation, the fact that the very-sparse tensor random projection is an expected isometry by construction and the independence of its columns it holds that,
+        \begin{equation*}
+        \begin{split}
+            &\,\mathbb E[Z_{q,k}\,\vert\,W^{(1)},\dots, W^{(m)}]\\=&\,\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}}\prod_{p=1}^k\mathbb E\left.\left[\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle \;\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle\,\right\vert\,W_1,\dots,W_m\right]\\=&\,\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}}\prod_{p=1}^k \mathbb E\left[\gPi_{\ast ,q}^{(p)}\odot \gPi_{\ast ,q}^{(p)}\right]^\intercal(\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\otimes\gDelta\widetilde{\gphi}_p(Y(t_{j_p})))\\=&\,\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}}\prod_{p=1}^k\langle\gDelta\widetilde{\gphi}_p(X(t_{i_p})),\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle.
+        \end{split}
+        \end{equation*}
+        Thus as in the proof of Theorem C.12 of \cite{toth2025}, $\widetilde{\mathscr k}_{\mathtt{TRP}}^m$ is conditionally an unbiased estimator of $\widetilde{\mathscr{k}}_{\mathtt{RFF}}^{ m}$ given $W^{(1)},\dots,W^{(m)}$. For any $i\in \triangle_k([\vert X\vert ])$, $j\in \triangle_k([\vert Y\vert ])$ by Lemma \ref{vs-trp-sp-bound} and Lemma \ref{prod-orlicz-norm-bound} it holds that,
+        \begin{equation}\label{prod-rff-trp-eq1}
+        \begin{split}
+            &\,\|\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle \;\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle\|_{\gpsi_1}\\\leq&\, \| \langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle\|_{\gpsi_2}\|\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle\|_{\gpsi_2}\\\leq&\, 2C^2n\|\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\|_2\|\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\|_{2}.
+        \end{split}
+        \end{equation}
+        Independence across the columns within each random projection, (\ref{prod-rff-trp-eq1}) and Lemma \ref{prod-orlicz-norm-subexp} give
+        \begin{equation}\label{prod-rff-trp-eq2}
+        \begin{split}
+            &\,\left\|\,\prod_{p=1}^k \langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle \;\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle\,\right\|_{\gpsi_{1/m}} \\\leq&\, C^2\prod_{p=1}^k\| \langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle \;\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle\|_{\gpsi_1}
+            \\\leq&\,C^2n^k\prod_{p=1}^k\|\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\|_2\|\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\|_{2},
+        \end{split}
+        \end{equation}
+        where all constants were absorbed into one.
+        Next, by applying Lemma \ref{triangle-ineq-orlicz-norm} and (\ref{prod-rff-trp-eq2}), we conclude that,
+        \begin{equation}\label{prod-rff-trp-eq3}
+        \begin{split}
+            \|Z_{q,k}\|_{\gpsi_{1/k}}&\leq C^2\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}} \left\|\,\prod_{p=1}^k \langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\rangle \;\langle{\gPi_{\ast ,q}^{(p)} },\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\rangle\,\right\|_{\gpsi_{1/m}}\\ &\leq C^2n^k2^{k(\vert\triangle_k([\vert X\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2)}\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}}\prod_{p=1}^k\|\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\|_2\|\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\|_{2}.
+        \end{split}
+        \end{equation}
+        Next, by using Corollary C.7 in \cite{toth2025} and (\ref{prod-rff-trp-eq3}), we observe that,
+        \begin{equation}\label{prod-rff-trp-eq4}
+        \begin{split}
+            \|Z_{q,k}\|_{\gpsi_{1/k}}&\leq C^2n^k2^{k(\vert\triangle_k([\vert X\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2)}\sum_{\substack{i\in \triangle_k([\vert X\vert ])\\ j\in \triangle_k([\vert Y\vert ])}}\prod_{p=1}^k\|\gDelta\widetilde{\gphi}_p(X(t_{i_p}))\|_2\|\gDelta\widetilde{\gphi}_p(Y(t_{j_p}))\|_{2} \\ &\leq C^2n^k2^{k(\vert\triangle_k([\vert X\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2)}\frac{\|X\|_1^k\|Y\|^k_{1}}{(k!)^2}\prod_{p=1}^k\left(\frac{\|W^{(p)}\|_{2}}{\sqrt{n}}\right)^2=:\grho_k(W).
+        \end{split}
+        \end{equation}
+        Lemma \ref{bernstein-corollary-2} and (\ref{prod-rff-trp-eq4}) yield that, for all $\gepsilon>0$, $k\in [m]\cup\{0\}$ and some constant $C'>0$,
+        \begin{equation*}
+            \mathbb P\left.\left(\vert\,\gzeta_{\mathtt{TRP},\,k}-\gzeta_{\mathtt{Sig},\,k}\vert \geq \gepsilon\,\right\vert\,W^{(1)},\dots,W^{(m)} \right)\leq 2\exp\left(-C'n\min\left\{\frac{\gepsilon^2}{\grho_k(W)^2}, \frac{\gepsilon^{1/k}}{\grho_k(W)^{1/k}}\right\}\right).
+        \end{equation*}
+        Define
+        \begin{equation*}
+            \gXi_k:=\frac{\gepsilon(k!)^2}{C^2n^k2^{k(\vert\triangle_k([\vert Y\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2)}\|X\|_1^k\|Y\|^k_{1}};\; \gUpsilon_k(W):=\prod_{p=1}^k\frac{\|W^{(p)}\|_{2}}{\sqrt{n}}.
+        \end{equation*} 
+        Assume that $\gepsilon^2/\grho_k(W)^2\geq \gepsilon^{1/k}/\grho_k(W)^{1/k}$.\par To obtain an upper bound unconditional of $W^{(1)},\dots,W^{(m)}$, we apply the tower rule and the reverse Young's inequality with $p=1/2$, $q=1$ to shift the Random Fourier Feature weights into the numerator.
+        Let $\glambda>0$, which controls the convergence of the geometric series in the moment-generating-function of $W^{(1)},\dots, W^{(k)}$, then by Corollary with $p=1/2$ and $q=1$
+        \begin{equation}\label{pointwise-rfsf-trp-ineq-exp-ub}
+             \glambda C'n(\gXi_k)^{1/k}\frac{1}{\glambda\gUpsilon_k(W)^{2/k}}\geq 2(\glambda C'n)^{1/2} (\gXi_k)^{1/2k}-\glambda\gUpsilon_k(W)^{2/k}.
+        \end{equation}
+        Applying the tower rule to the pointwise conditional upper bound yields
+        \begin{equation}\label{pointwise-conv-eq1}
+        \begin{split}
+            &\,\mathbb P\left(\left.\vert \gzeta_{\mathtt{TRP},\,k}-\gzeta_{\mathtt{RFF},\,k}\vert \geq \gepsilon\,\right\vert\,\gepsilon^2/\grho_k(W)^2\geq \gepsilon^{1/k}/\grho_k(W)^{1/k}\right)\\=&\,\mathbb E\left.\left[\mathbb P\left.\left(\vert \gzeta_{\mathtt{TRP},\,k}-\gzeta_{\mathtt{RFF},\,k}\vert\geq \gepsilon\,\right\vert\,W^{(1)},\dots,W^{(m)} \right)\right\vert\gepsilon^2/\grho_k(W)^2\geq \gepsilon^{1/k}/\grho_k(W)^{1/k} \right]\\\leq&\, 2\mathbb E\left[\exp\left(-\glambda C'n(\gXi_k)^{1/k}\frac{1}{\glambda\gUpsilon_k(W)^{2/k}}\right)\right]
+            \\\leq&\, 2\mathbb E\left[\exp\left(-2(\glambda C'n)^{1/2} (\gXi_k)^{1/2k}+\glambda\gUpsilon_k(W)^{2/k}\right)\right]
+            \\\leq&\,2\exp\left(-2(\glambda C'n)^{1/2} (\gXi_k)^{1/2k}\right)\mathbb E\left[\glambda\gUpsilon_k(W)^{2/k}\right],
+        \end{split}
+        \end{equation}
+        where the next-to-last inequality follows from  (\ref{pointwise-rfsf-trp-ineq-exp-ub}). It remains bounding the expectation of the product using the moment-generating function as in Equation C.21 and below from \cite{toth2025}. By choosing $\glambda =1/(2\gbeta)<1/\gbeta$, we conclude
+        \begin{equation*}
+        \begin{split}
+            \mathbb E\left[\glambda\gUpsilon_k(W)^{2/k}\right]&\leq \mathbb E\left[\frac{\glambda}{n}\prod_{p=1}^k\|W^{(p)}\|_F^{2/k} \right] \\&\leq \mathbb E\left[\frac{\glambda}{nk}\sum_{p=1}^k\|W^{(p)}\|_F^{2} \right]\leq \left(1+\frac{\galpha^2}{2\gbeta}+\frac{\galpha^4}{4\gbeta^2}\right)^{d},
+        \end{split}
+        \end{equation*}
+        where the first inequality is simply using the Frobenius norm definition and the second inequality follows by using the inequality of arithmetic and geometric means, details can be found on page 54 in \cite{toth2025}. This yields
+        \begin{equation*}
+        \begin{split}
+            &\,\mathbb P\left(\left.\vert \gzeta_{\mathtt{TRP},\,k}-\gzeta_{\mathtt{RFF},\,k}\vert \geq \gepsilon\,\right\vert\,\gepsilon^2/\grho_k(W)^2\geq \gepsilon^{1/k}/\grho_k(W)^{1/k}\right)\\\leq&\,2\left(1+\frac{\galpha}{2\gbeta}+\frac{\galpha^2}{4\gbeta^2}\right)^{d}\exp\left(-C{''}\frac{\gepsilon^{1/2k}(k!)^{1/k}}{(\gbeta\|X\|_1\|Y\|_1)^{1/2}2^{1/2((\vert\triangle_k([\vert Y\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2))}}\right),
+        \end{split}
+        \end{equation*}
+        where as usual all constants have been absorbed into $C''$. Applying the whole procedure to the other case yields 
+        \begin{equation*}
+            \begin{split}
+                &\,\mathbb P\left(\left.\vert \gzeta_{\mathtt{TRP},\,k}-\gzeta_{\mathtt{RFF},\,k}\vert \geq \gepsilon\,\right\vert\,\gepsilon^2/\grho_k(W)^2< \gepsilon^{1/k}/\grho_k(W)^{1/k}\right)\\\leq&\,4\left(1+\frac{\galpha}{2\gbeta}+\frac{\galpha^2}{4\gbeta^2}\right)^{dk}\exp\left(-C'''\frac{\gepsilon(k!)^2}{\gbeta^{1/2}n^{k-1/2}2^{k(\vert\triangle_k([\vert Y\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2)}\|X\|_1^k\|Y\|^k_{1}}\right)
+            \end{split}
+        \end{equation*}
+        Set 
+        \begin{equation}\label{constants-rfsf-trp}
+        \begin{split}
+            \gPhi_1(\gLambda, X,Y,\gepsilon)&:=C{''}\max_{k\in [n]\cup\{0\}}\frac{\gepsilon^{1/2k}(k!)^{1/k}}{(\gbeta\|X\|_1\|Y\|_1)^{1/2}2^{1/2((\vert\triangle_k([\vert Y\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2))}}\\
+            \gPhi_2(\gLambda, X,Y,\gepsilon)&:=C'''\max_{k\in [n]\cup\{0\}}\frac{\gepsilon(k!)^2}{\gbeta^{1/2}n^{k-1/2}2^{k(\vert\triangle_k([\vert Y\vert ]) \vert +\vert \triangle_k([\vert Y\vert ])\vert -2)}\|X\|_1^k\|Y\|^k_{1}}
+            \\\gPsi(\gLambda)&:=1+\frac{\galpha}{2\gbeta}+\frac{\galpha^2}{4\gbeta^2}
+        \end{split}
+        \end{equation}
+        then using the law of total probability yields the following unconditional bound
+        \begin{equation*}
+            \begin{split}
+                \mathbb P\left(\vert \gzeta_{\mathtt{TRP},\,k}-\gzeta_{\mathtt{RFF},\,k}\vert \geq \gepsilon\right)\leq 6\gPsi(\gLambda)^{dk}\exp(-\min\{\gPhi_1(\gLambda, X, Y,\gepsilon), \gPhi_2(\gLambda, X, Y,\gepsilon)\}).
+            \end{split}
+        \end{equation*}
+        Applying the union bound concludes the proof,
+        \begin{equation*}
+            \mathbb P\left(\vert \widetilde{\mathscr k}^m_{\mathtt{TRP}}(X,Y)-\widetilde{\mathscr k}^m_{\mathtt{RFF}}(X,Y)\vert\geq \gepsilon \right)\leq 6m\gPsi(\gLambda)^{dk}\exp(-\min\{\gPhi_1(\gLambda, X,Y,\gepsilon), \gPhi_2(\gLambda, X,Y,\gepsilon)\}).\qedhere
+        \end{equation*}
+    \end{proof}
+Note that we gave an upper bound on the approximation error between the Random Fourier Signature Feature kernel and the Very-Sparse Tensor Random Projection variant. To get a bound for the discretized signature kernel we use a union bound with Theorem \ref{unif-conv-rfsf}. This yields the following 
+\begin{corollary}
+    In the setting of Definition \ref{rfsf-trp-def}, it holds that for all $\gepsilon>0$,
+   \begin{equation*}
+   \begin{split}
+       &\,\mathbb P(\vert \widetilde{\mathscr k}_{\mathtt{TRP}}(X,Y)-\widetilde{\mathscr k}_{\mathtt{Sig}}(X,Y)\vert \geq \gepsilon)\\\leq&\, 6m\gPsi(\gLambda)^{dk}\exp(-\min\{\gPhi_1(\gLambda, k,\gepsilon/2), \gPhi_2(\gLambda, k,\gepsilon/2)\})) + \\&m\gtheta_{n, d,I}\left(\biggl(\frac{2\gtau_{d,m,V}}{\gepsilon}\right)^{d/(d+1)}+d+1\biggr)\exp\left(-\gxi_{n, d,\gLambda}\min\left\{\left(\frac{\gepsilon}{2\gtau_{d,m,V}}\right)^2, \left(\frac{\gepsilon}{2\gtau_{d,m,V}}\right)^{1/m}\right\}\right),
+   \end{split}
+   \end{equation*}
+   where the constants have been defined in the respective theorems.
+\end{corollary}
+This corollary also concludes the thesis. We use this closing paragraph to comment on the improved runtime compared to the iid gaussian random projections that were chosen in Theorem 3.7 of \cite{toth2025}. Recall that we set the sparsity parameter to $2n$. The very-sparse random projection reduces the computation of the projected increments in Algorithm D.3 of \cite{toth2025} from $\mathscr O(dn)$ to $\mathscr O(dn/\sqrt{2n})$. Thus, the total runtime reduces from $\mathscr O(mNL_{\max}n(d+n))$ as stated in Remark 3.9 \cite{toth2025} to $\mathscr O(mNL_{\max}(d\sqrt{n}+n^2))$. Asymptotically that is equivalent to 
+\begin{equation*}
+    \gSigma=\frac{dn+n^2}{d\sqrt{n}+n^2}=\sqrt{n}\left(\frac{1+n/d}{1+n^{3/2}/d}\right),
+\end{equation*} 
+which means given $n\ll d$,
+\begin{equation*}
+    \gSigma =\sqrt{n}\left(\frac{1+\mathscr o(1)}{1+\mathscr o(1)}\right)=\sqrt{n}
+\end{equation*}
+or a speed-up of order $\sqrt{n}$. Thus, we expect fair speed-up rates for time series with high dimensionality, which do occur in natural language processing with one-hot-encoded tokens or genome data.\par We also want to note that also a uniform bound can be proven using generic chaining \cite{talagrand2005}, \cite{dirksen2015} and similar tail bounds as in the pointwise case. The only requirement is that the $1$-variation is bounded by some constant $V>0$ to build a deterministic upper bound on the diameter and the $\ggamma_{1/k}$-functional \gls{gamma-func}\cite{talagrand2005}, which is estimated through Dudley's Entropy Integral \cite{dirksen2015}. However, we choose to omit the proof due to time constraints.
+\printnoidxglossary[
+  type=symbols,
+  style=list,
+  title={List of Abbreviations and Symbols}
+]
+\printbibliography
+\end{document}
